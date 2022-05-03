@@ -1,2 +1,2 @@
 # OLA2022project
- Project for Data Intelligence Applications with Professor in Politecnico di Milano A.Y. 2020/2021
+ Project for Data Intelligence Applications with Professor Nicola Gatti in Politecnico di Milano A.Y. 2021/2022
