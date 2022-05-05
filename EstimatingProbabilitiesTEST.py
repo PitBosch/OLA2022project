@@ -3,11 +3,19 @@ from copy import copy
 def simulate_episode(init_prob_matrix, n_steps_max, alpha):
     prob_matrix=init_prob_matrix.copy() #store matrix
     n_nodes=prob_matrix.shape[0] #number
-    initial_active_nodes= np.random.binomial(1,0.1, size=1) #only one node is activated at the beginning of the episode
-    #how do we choose the distribution? it's easy because a user has alpha_i probability of seeing the i_th product
-    #So this has to be changed
+    #only one node is activated at the beginning of the episode
+    #how do we choose the distribution? A user has alpha_i probability of seeing the i_th product
+    #So I think that what we need is that the initial node is drawn from a discrete distribution
+    #the 𝛼 ratios will be realizations of independent Dirichlet random variables.
+    #I assume the parameter of the dirichlet to be all ones, since there's no prior assumption
+    
+    elements = range(0,5)
+    param = np.ones(6)
+    alpha=np.random.dirichlet(np.ones(6),1) #I chose size=1 because we will have 6 alphas for every episode, oteherwise it's possible to generate this alpha
+    #before the simulation of the episode
+    initial_active_nodes=np.random.choice(elements, 10, p=alpha)
 
-    history= np.array([initial_active_nodes])
+    history= np.array([initial_active_nodes]) #from a numpy to an array
     active_nodes=initial_active_nodes
     newly_active_nodes=active_nodes
     #I think that these 3 lines can be left the same
