@@ -13,6 +13,8 @@ def simulate_episode(init_prob_matrix, n_steps_max, alpha):
     param = np.ones(6)
     alpha=np.random.dirichlet(np.ones(6),1) #I chose size=1 because we will have 6 alphas for every episode, oteherwise it's possible to generate this alpha
     #before the simulation of the episode
+    #np.ones can be changed in order to give more weight to the competitor
+   
     initial_active_nodes=np.random.choice(elements, 10, p=alpha)
 
     history= np.array([initial_active_nodes]) #from a numpy to an array
