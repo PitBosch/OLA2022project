@@ -9,15 +9,15 @@ def simulate_episode(init_prob_matrix, n_steps_max, alpha):
     #the 𝛼 ratios will be realizations of independent Dirichlet random variables.
     #I assume the parameter of the dirichlet to be all ones, since there's no prior assumption
     
-    elements = range(0,5) #this becomes a diagonal
+    elements_idx = range(0,6)
     param = np.ones(6)
     alpha=np.random.dirichlet(np.ones(6),1) #I chose size=1 because we will have 6 alphas for every episode, oteherwise it's possible to generate this alpha
     #before the simulation of the episode
     #np.ones can be changed in order to give more weight to the competitor
    
-    initial_active_node_idx=np.random.choice(elements, 10, p=alpha)
-    initial_active_node = np.diag(6)(initial_active_node_idx,:) #prendo l'n-esima riga della matrice diagonale, da rivedere la sintassi
-
+    initial_active_node_idx=np.random.choice(elements_idx, p=alpha.reshape(-1))
+    initial_active_node = np.diag(np.ones(6))[initial_active_node_idx] #prendo l'n-esima riga della matrice diagonale, da rivedere la sintassi
+    print(initial_active_node)
     history= np.array([initial_active_nodes]) #from a numpy to an array
     active_nodes=initial_active_nodes
     newly_active_nodes=active_nodes
