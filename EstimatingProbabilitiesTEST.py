@@ -11,7 +11,8 @@ def simulate_episode(init_prob_matrix, n_steps_max, alpha):
     
     elements_idx = range(0,6)
     param = np.ones(6)
-    alpha=np.random.dirichlet(np.ones(6),1) #I chose size=1 because we will have 6 alphas for every episode, oteherwise it's possible to generate this alpha
+    alpha=np.random.dirichlet(np.ones(6),1)
+    #I chose size=1 because we will have 6 alphas for every episode, oteherwise it's possible to generate this alpha
     #before the simulation of the episode
     #np.ones can be changed in order to give more weight to the competitor
    
@@ -57,7 +58,7 @@ def estimate_probabilities(dataset, node_index, n_nodes):
     return estimated_prob
 
 n_nodes= 5 #5 nodes
-n_episodes = 1000
+n_episodes = 1000 #this is also the number of clients
 prob_matrix = np.random.uniform(0.0,0.1,(n_nodes, n_nodes)) #quale è la nostra probability matrix
 node_index=4
 dataset = []
