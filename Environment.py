@@ -32,11 +32,14 @@ class Environment:
         for user in self.users:
             user.update_alphas()
 
+        daily_profit = 0
         for i in range(users_number):
             user_kind = np.random.multinomial(1, users_probs)
+            probabilities = self.users[user_kind].probabilities.copy()
 
             # The class of the user is sampled from a multinomial depending on the known proportions
-            self.execute(self.users[user_kind], links, lambda_prob)
+            daily_profit += self.execute(self.users[user_kind], links, lambda_prob)
+            self.users[user_kind].restore(probabilities)
 
         self.update_prices()
 

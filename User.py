@@ -7,6 +7,8 @@ class User:
     def __init__(self, alphas: np.array, res_price: float, poisson_lambda: float, probabilities: pd.DataFrame):
         # Entry proportions between the different products (alpha_0: prob of visiting a competitor website)
         self.alphas = alphas
+
+        # Proportions obtained by sampling at the start of each day
         self.sampled_alphas = alphas
 
         # Economic availability
@@ -34,6 +36,12 @@ class User:
 
     def update_alphas(self):
         self.sampled_alphas = np.random.dirichlet(self.alphas, len(self.alphas))
+
+    def restore(self, original_probabilities):
+        """At the end of each interaction between a user of this user class and the website we have to restore the original
+           transition probabilities and the original margin since the evolution of the visit has changed them."""
+        self.margin = 0
+        self.probabilities = original_probabilities
 
     def update_res_price(self):
         print(0)  # TODO: ragionare sul sistema di aggiornamento della disponibilità economica nel caso in cui l'utente effettui un acquisto.
