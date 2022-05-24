@@ -5,7 +5,7 @@ class Environment:
     """Class containing all the informations that characterize the problem, from the classes of users to the list of available
        products. """
 
-    def __init__(self, users: [User], products: [Product], n_arms, product_2_price):
+    def __init__(self, users: [UserCat], products: [Product], n_arms, product_2_price):
         self.users = users
         self.n_arms = n_arms
 
