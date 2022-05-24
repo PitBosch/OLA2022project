@@ -1,0 +1,36 @@
+- Environment.py
+    update.prices() non penso abbia senso definirlo all'interno dell'Environment, perchè dipende dall'algoritmo che stiamo
+    utilizzando per l'ottimizzazione. Nella mia testa l'Environment è solo una scatola nera che simula le interazioni del
+    sito in un giorno e che deve sapere qual è l'optimal regret.
+
+    Manca da implementare quindi un metodo per ricavare l'optimal regret
+
+- UserCat.py
+    Con Bosca e Elisa ci eravamo confrontati sul reservation price, oltre a trovare sensata una diminuzione rispetto agli acquisti
+    effettuati (che però secondo me rimane inattuabile o comunque di difficile implementazione pratica e teorica) avevamo pensato
+    di rendere randomico il valore del reservation price per ogni utente della simulazione. Per la distribuzione si pensava una
+    gamma/gamma troncata che avesse dei parametri fissati per classe di utente e concordi col il tipo di utente (e.g. utenti 
+    giovani e ignoranti avranno una distribuzione di reservation price concentrata su valori bassi)
+
+    Gestione delle Probabilities: secondo me è brutto fare una copia dell'originale e poi ributtarcela dentro. Vedendo anche i 
+    problemi che ci sono in WebPage.py per la gestione delle Probabilities ha senso pensare a un modo più sensato di farlo.
+    Secondo me la cosa migliore è lasciare le probabilities fisse e aggiungere nella simulazione una lista con i primary esplorati
+    e un IF secondary in lista(primary esplorati) NON CLICCO
+
+- Product.py
+    I secondary poduct mostrati all'acquisto di un primary product sono fissi, si può considerare di aggiungere la lista dei 
+    secondary associati alle strutture dati di questa classe. Se no la dict[Product] va benissimo.
+
+- WebPage.py
+    interact() + struttura generale : così come è implementato il tutto io continuo a creare oggetti WebPage e oggetti User.
+    Pensavo se avesse senso avere una classe WebPage: non conviene implementare semplicemente il metodo interact nell'environment?
+    Nella mia testa prenderebbe in ingresso:
+        - Primary product (in cui abbiamo messo anche i link ai secondary)
+        - matrice della probabilities (su cui può fare quello che vuole)
+        - reservation price
+        - lambda
+        - Combinaizione dei prezzi che si sta esplorando
+
+    Secondo me poi ha senso organizzare la struttura ricorsiva con dei return margin + interact(....) in modo da non dover creare 
+    continuamente degli oggetti della classe user
+
