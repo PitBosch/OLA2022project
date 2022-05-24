@@ -2,7 +2,7 @@ import numpy as np
 import pandas as pd
 
 
-class User:
+class UserCat:
     """Class containing all the informations required to simulate the behaviour of a particular user in our website"""
     def __init__(self, alphas: np.array, res_price: float, poisson_lambda: float, probabilities: pd.DataFrame):
         # Entry proportions between the different products (alpha_0: prob of visiting a competitor website)
