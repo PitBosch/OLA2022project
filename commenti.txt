@@ -33,4 +33,10 @@
 
     Secondo me poi ha senso organizzare la struttura ricorsiva con dei return margin + interact(....) in modo da non dover creare 
     continuamente degli oggetti della classe user
+    
+    
+    BOSCA
+    Una roba che io non capisco invece è la gestione degli alpha perchè devo passarli a ogni classe di utenti? quando poi vado a riaggiornarli tramite una dirichlet? Se faccio sta roba non continuano a concentrarsi solo su un particolare valore?
+    Poisson lambda non dipende dal prodotto?
+    
 
