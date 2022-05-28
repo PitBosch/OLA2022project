@@ -15,8 +15,8 @@ stavo pensando a:
 
 Classi
 #Environment
-the 3 cathegory are passed to the environment together with products and a dict that is associating the product to 4 prices
-#UserCat -> cathegory of user IG IV E
+the 3 category are passed to the environment together with products and a dict that is associating the product to 4 prices
+#UserCat -> category of user IG IV E
 Petrus 
 
 #Product -> prodotto
