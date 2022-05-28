@@ -3,7 +3,7 @@ import pandas as pd
 
 
 class UserCat:
-    """Class containing all the informations required to simulate the behaviour of a particular user in our website"""
+    """Class containing all the informations required to simulate the behaviour of a particular cathegory in our website"""
     def __init__(self, alphas: np.array, res_price: float, poisson_lambda: float, probabilities: pd.DataFrame):
         # Entry proportions between the different products (alpha_0: prob of visiting a competitor website)
         self.alphas = alphas
@@ -32,10 +32,10 @@ class UserCat:
     def start_event(self):
         """Method which extract the starting point of the user visit, if it returns 0 it means that the user has decided
            to visit a competitor website. """
-        return np.random.multinomial(1, self.sampled_alphas)
+        return np.random.choice(list(range(0,6)), p=self.sampled_alphas.reshape(-1))
 
-    def update_alphas(self):
-        self.sampled_alphas = np.random.dirichlet(self.alphas, len(self.alphas))
+    def generate_alphas(self):
+        self.sampled_alphas = np.random.dirichlet(self.alphas, 1)
 
     def restore(self, original_probabilities):
         """At the end of each interaction between a user of this user class and the website we have to restore the original
@@ -44,5 +44,5 @@ class UserCat:
         self.probabilities = original_probabilities
 
     def update_res_price(self):
-        print(0)  # TODO: ragionare sul sistema di aggiornamento della disponibilità economica nel caso in cui l'utente effettui un acquisto.
+        print(" ")  # TODO: ragionare sul sistema di aggiornamento della disponibilità economica nel caso in cui l'utente effettui un acquisto.
     # ragionevole pensare che un acquisto abbia un impatto sul budget a disposizione.

@@ -2,7 +2,7 @@ import string
 
 
 class Product:
-    """ Data structure containing all the necessary informations about each product"""
+    """ Data structure containing all the necessary information about each product"""
     def __init__(self, prices: [float], label: int, name: string, margins: [float]):
         # List containing all the possible price values for the product
         self.prices = prices
@@ -19,3 +19,6 @@ class Product:
 
     def get_daily_margin(self, pos):
         return self.margins[pos]
+
+    def get_selected_price(self):
+        return self.prices.index(self.prices[self.label])
