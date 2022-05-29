@@ -25,6 +25,9 @@ class UserCat:
 
         self.visited_products = []
 
+        self.gamma = scipy.stats.gamma(self.res_price_params['shape'], self.res_price_params['scale'])
+        self.u = np.random.uniform() # to extract from the truncated gamma distr
+
     def buy(self, price) -> bool:
         if self.res_price > price:
             self.update_res_price()
@@ -47,8 +50,9 @@ class UserCat:
     # ragionevole pensare che un acquisto abbia un impatto sul budget a disposizione.
 
     def sample_res_price(self):
-        u = np.random.uniform()
-        gamma = scipy.stats.gamma(self.res_price_params['shape'], self.res_price_params['scale'])
-        G_Max = gamma.cdf(self.res_price_params['max'])
-        G_Min = gamma.cdf(self.res_price_params['min'])
-        self.res_price = gamma.ppf(u * (G_Max-G_Min) + G_Min)
+        G_Max = self.gamma.cdf(self.res_price_params['max'])
+        G_Min = self.gamma.cdf(self.res_price_params['min'])
+        self.res_price = self.gamma.ppf(self.u * (G_Max-G_Min) + G_Min)
+    
+    def get_buy_prob(self, price):
+        return 1 - self.gamma.cdf(price)

@@ -45,3 +45,9 @@ FARE:
 - mettere lista di oggetti già visitati + sistemare le probabilities
 - cambiare struttura della visita (meccanismo gerarchico dei prodotti visitati)
 - aggiungere meccanismo di sampling per il reservation price di ogni utente data la distribuzione
+
+ANDRE:
+- In tutte le classi con funzioni di probabilità da cui estraiamo penso sia meglio avere degli "oggetti random generator" con seed 
+    impostabile per avere la replicabilità degli esperimenti e non rischiare di estrarre sempre le stesse cose. Può aver senso anche
+    avere degli oggetti distribuzione in modo da non dovere avere più metodi che creano la stessa cosa.
+     

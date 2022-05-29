@@ -1,3 +1,4 @@
+from unittest import skip
 from WebPage import *
 
 
@@ -5,12 +6,19 @@ class Environment:
     """Class containing all the informations that characterize the problem, from the classes of users to the list of available
        products. """
 
-    def __init__(self, users: [UserCat], products: [Product], product_2_price):
+    def __init__(self, users: list[UserCat], products: list[Product], product_2_price, lambda_q, Secondary_dict, 
+                 user_cat_prob):
         self.users = users
         # List of available products: each of them has available the information of its position in the list -> attribute label
         self.products = products
         # Dict connecting to each product the position (with respect to the list of possible prices) of the chosen price
         self.product_2_price = product_2_price
+        # lambda_q is the parameter that determines how much the second secondary is less probable to be clicked
+        self.lambda_q = lambda_q
+        # dictionary of lists of secondary products
+        self.Secondary_dict = Secondary_dict
+        # relative frequency of the users category
+        self.user_cat_prob = user_cat_prob # TODO:valutare se inserirlo come membro della classe userCat
 
 ##praticamente se non ho capito male dovrei creare 5 dict-> 1 per ogni prodotto --> No in realtà devi creare un dizionario con 5 elementi Prodotto: posizione del prezzo
     def execute(self, user, links, lambda_prob, products):
@@ -41,6 +49,109 @@ class Environment:
             self.users[user_kind].restore()
             # TODO: aggiungere sistema per sviluppare l'ottimizzazione per ogni classe di utenti presa singolarmente (context generation)
         self.update_prices()
+
+    def get_secondary(self, product: Product):
+        """ Support method to retrieve the 2 secondary products associated to the given product"""
+        secondary_list = []
+        secondary_list.append(self.Secondary_dict[product])
+        return secondary_list
+
+    def exp_return(self, primary: Product, primary_history: set[Product], q_link, link, price_combination, user: UserCat):
+        """ Method to compute the expected return for a singel product. The method is thought to give the priority to the 
+            fist secondary product related to the primary product."""
+        
+        # first check if we have to stop the function, this is the case if:
+        # primary is in primary_history --> the probability of the click is zero so the expected return
+        # if not, add primary to the primary history  
+         
+        if primary in primary_history or primary.label == "null":
+            return 0
+        else:
+            primary_history.add(primary)
+
+        # retrieve price and margin for the primary product
+        i = primary.label
+        price = primary.get_daily_price(price_combination[i])
+        margin = primary.get_daily_margin(price_combination[i])
+        
+        # compute b_i, i.e the probability to buy the primary product considered
+        b_i = self.users.get_buy_prob(price)
+        
+        # compute expected margin
+        exp_margin = margin * user.poisson_lambda  # margin * expected number of items bought, that is the poisson parameter
+
+        # if both secondary items have been already seen we simply return the expected margin and go back to the link
+        secondary_list = self.get_secondary(primary) 
+
+        if secondary_list in primary_history:
+            return b_i*exp_margin + q_link[-1] * self.exp_return(link[-1], primary_history, q_link[:-1], link[:-1], price_combination, user)
+
+        # all exceptions have been treated, let's now compute the expected return in the basic cas
+        
+        # store the secondary and their labels
+        s_1 = secondary_list[0]
+        s_2 = secondary_list[1]
+        
+        j_1 = s_1.label
+        j_2 = s_2.label
+
+        # compute probabilities to click on the secondary given that the primary is bought
+        q_1 = user.probabilities[i, j_1]
+        q_2 = user.probabilities[i, j_2]*self.lambda_q
+
+        return b_i*[exp_margin + q_1 * self.exp_return(s_1, primary_history, q_link.append(q_2), link.append(s_2), price_combination, user) +
+                    (1-q_1) * q_2 * self.exp_return(s_2, primary_history, q_link, link, price_combination, user) +
+                    (1-q_1) * (1-q_2) * q_link[-1] * self.exp_return(link[-1], primary_history, q_link[:-1], link[:-1], price_combination, user)]
+    
+    def regret_aggregated(self, price_combination):
+        """ Method that compute the expected regret related to the prices compbination passed to the function"""
+        regret = 0
+
+        for user_cat in self.users:
+            i = 1
+            j = 0
+            user_regret = 0
+            for product in self.products:
+                alpha_i = user_cat.alphas[i]
+                i = i+1
+                # the regret is weighted to the mean probability of having a client of a specific user category
+                user_regret += alpha_i * self.exp_return(product, {}, [0], [Product([], -1, "null", [], price_combination, user_cat)])
+            
+            regret += self.user_cat_prob[j] * user_regret
+        
+        return regret
+
+    def optimal_regret(self):
+        """ This method explores all the possible combination with a brute force approac to determine which is the price combination
+            that returns the highest expected regret. It returns both the optimal price combination and optimal expected regret"""
+            
+        optimal_combination = [0, 0, 0, 0, 0]
+        regret_max = 0
+        regret = 0
+        
+        # enumerate all possible combinations of prices (4^5, 1024)
+        possible_combinations = []
+
+        # TODO: PENSARE UN MODO PIU' INTELLIGENTE!
+        for i1 in range(4):
+            for i2 in range(4):
+                for i3 in range(4):
+                    for i4 in range(4):
+                        for i5 in range(4):
+                            possible_combinations.append([i1, i2, i3, i4, i5])
+
+        for price_combination in possible_combinations:       
+            # compute regret for the price combination considered
+            regret = self.regret_for_price_combination(price_combination)
+            
+            # update if actual regret is greater than best past regret
+            if regret > regret_max:
+                regret_max = regret
+                optimal_combination = price_combination.copy()
+
+        return regret_max, optimal_combination
+
+
 
     def update_prices(self):
         print(0)  # TODO: pensare a come effettuare l'aggiornamento dei pesi al termine di ciascuna giornata
