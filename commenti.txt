@@ -36,7 +36,12 @@
     
     
     BOSCA
-    Una roba che io non capisco invece è la gestione degli alpha perchè devo passarli a ogni classe di utenti? quando poi vado a riaggiornarli tramite una dirichlet? Se faccio sta roba non continuano a concentrarsi solo su un particolare valore?
+    Una roba che io non capisco invece è la gestione degli alpha perchè devo passarli a ogni classe di utenti? quando poi vado a
+    riaggiornarli tramite una dirichlet? Se faccio sta roba non continuano a concentrarsi solo su un particolare valore?
     Poisson lambda non dipende dal prodotto?
-    
 
+
+FARE:
+- mettere lista di oggetti già visitati + sistemare le probabilities
+- cambiare struttura della visita (meccanismo gerarchico dei prodotti visitati)
+- aggiungere meccanismo di sampling per il reservation price di ogni utente data la distribuzione

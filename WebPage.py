@@ -24,34 +24,16 @@ class WebPage:
 
             """To simulate the random behaviour of the user we sample from a random distribution and we use it to evaluate whether
                an event has occurred or not. """
-            first_click = np.random.uniform() < self.user.probabilities[self.product.label, first_secondary.label]
+            first_click = (np.random.uniform() < self.user.probabilities[self.product.label, first_secondary.label])
             second_click = np.random.uniform() < lambda_prob * self.user.probabilities[self.product.label, second_secondary.label]
 
-            # First case-> the user clicks on both the available links
-            if first_click and second_click:
-
-                """When a product appears as primary for a user, we should set all the probabilities to go back to it to 0
-                   since after a first look the user will never open again that product. In this case, since the paths are 
-                   considered independent, the information that the two products are being displayed as primary in a webpage
-                   is immediately shared. """
-                self.user.probabilities[:, [first_secondary.label, second_secondary.label]] = 0
-                # TODO: al momento questo aggiornamento cambia per tutta la classe di utenti le probabilità, trovare una fix che
-                # TODO: resetti le probabilità al termine della visita di un utente.
+            if first_click and first_secondary not in self.user.visited_products:
+                self.user.visited_products.append(first_secondary)
                 new_WebPage = WebPage(first_secondary, self.user)
                 new_WebPage.interact(links, products, lambda_prob, price_pos)
 
-                second_new_WebPage = WebPage(second_secondary, self.user)
-                second_new_WebPage.interact(links, products, lambda_prob, price_pos)
-
-            # Second case -> only the first link is clicked
-            elif first_click:
-                self.user.probabilities[:, first_secondary.label] = 0
-                new_WebPage = WebPage(first_secondary, self.user)
-                new_WebPage.interact(links, products, lambda_prob, price_pos)
-
-            # Third case -> only the second link is clicked
-            elif second_click:
-                self.user.probabilities[:, second_secondary.label] = 0
+            if second_click and second_secondary not in self.user.visited_products:
+                self.user.visited_products.append(second_secondary)
                 second_new_WebPage = WebPage(second_secondary, self.user)
                 second_new_WebPage.interact(links, products, lambda_prob, price_pos)
 
