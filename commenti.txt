@@ -50,4 +50,23 @@ ANDRE:
 - In tutte le classi con funzioni di probabilità da cui estraiamo penso sia meglio avere degli "oggetti random generator" con seed 
     impostabile per avere la replicabilità degli esperimenti e non rischiare di estrarre sempre le stesse cose. Può aver senso anche
     avere degli oggetti distribuzione in modo da non dovere avere più metodi che creano la stessa cosa.
-     
+
+
+
+ANDRE E BOSCA
+-Togliamo product 2 price B
+-Aggiungere struttura links in environment B(secondarydict- associazione primary-secondary perchè deve essere fissato,
+ ce lo dice la consegna)
+-USercatprob meglio metterlo nella usercat A
+-LINEA 36 USER PROBS LINKS E LAMBDA DA TOGLIERE
+-struttura dati primary history if compro if compro sull'altro -> rifare seguendo la logica del exp_return
+-Gestire bene le simulazioni -> gestire bene tutto quello che è generato randomicamente
+-il margin dato che continuiamo ad azzerarlo ha senso se lo lasciamo come variabile dello scope webpage ma vedi sopra.
+-Togliamo margin da usercat, non è relativo alla categoria utente ma è specifico del path/simulazione seguit*
+-
+
+
+Teoria:
+-Abbiamo 1024 combinazioni di prezzi e dobbiamo trovare quella giusta.
+-Algoritmo-> 5 MAB da 4 braccia  (Assunzione indipendenza dei prezzi->non è vero Pro: algo comodo contro: sbagliato,
+ NB:salvo profitto per prodotto

@@ -25,7 +25,7 @@ prices=[[4., 5, 6 ,7],
     [18., 19, 20, 21],
     [24., 25, 26, 27],
     [33., 34, 35, 36]]
-
+#1-2 di delta, Con sovrapposizione
 
 cost=[2,4.5,9,14,17]
 
@@ -53,7 +53,7 @@ links={
 }
 res_price=100
 probabilities=np.random.uniform(0.0,0.1,(5, 5)) #matrix generata da una uniform / 5 because it is the number of product
-alphas=[1/2, 1/10,1/10,1/10,1/10,1/10] #per ora li generiamo così, tutti uguali -> devo generare 3 diversi vettori alpha
+alphas=[1/10,1/10,1/10,1/10,1/10,1/2] #per ora li generiamo così, tutti uguali -> devo generare 3 diversi vettori alpha
 
 poisson_lambda=0.7 #=valore atteso del numero di prodotti acquistati (specifico per prodotto)...non dipende dal prodotto oltre che dallo user che dal tipo di user che
 #possiamo stimarlo con i dati passati provenienti dal sito -> vino tot è stato comprato 15 volte
