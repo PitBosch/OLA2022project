@@ -47,16 +47,21 @@ res_price_params={
     "shape": 1,
     "scale": 1,
 }
-probabilities=np.random.uniform(0.0,0.1,(5, 5)) #matrix generata da una uniform / 5 because it is the number of product
-alphas=[1/10,1/10,1/10,1/10,1/10,1/2] #per ora li generiamo così, tutti uguali -> devo generare 3 diversi vettori alpha
+probabilities=np.random.uniform(0.0,0.1,(5, 5))
+#matrix generata da una uniform / 5 because it is the number of product
+alphas=[1/10,1/10,1/10,1/10,1/10,1/2]
+#per ora li generiamo così, tutti uguali -> devo generare 3 diversi vettori alpha
 
-poisson_lambda=0.7 #=valore atteso del numero di prodotti acquistati (specifico per prodotto)...non dipende dal prodotto oltre che dallo user che dal tipo di user che
-p_users=[1/3,1/3,1/3]
+poisson_lambda=0.7
+#=valore atteso del numero di prodotti acquistati (specifico per prodotto)...non dipende dal
+#prodotto oltre che dallo user che dal tipo di user che
+p_users=[1/3,1/3,1/3] #probabilità di essere un tipo di utente-> da cambiare
+
 lambda_q=0.5 #just my idea of lambda
 #possiamo stimarlo con i dati passati provenienti dal sito -> vino tot è stato comprato 15 volte
 
 #proviamo a pensare, ha senso vederlo come coppia? categoria-prodotto? Avrei 3 categorie *5 prodotti-> 15 lambda diversi
-#acquista
+
 
 
 
