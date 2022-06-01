@@ -14,7 +14,7 @@ class UserCat:
 
         # Economic availability parameters
         self.res_price_params = res_price_params
-        self.res_price = 100
+        self.res_price = 100 #TODO CAMBIARE RES PRICE, L'HO MESSO COSì SOLO PERCHè VOLEVO FAR GIRARE LA SIMULAZIONE
 
         # Parameter of the distribution which defines the number of purchased self.products in case of buying
         self.poisson_lambda = poisson_lambda
