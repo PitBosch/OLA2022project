@@ -17,7 +17,6 @@ class WebPage:
             self.user.margin += self.product.get_daily_margin(price_pos) * self.user.get_prod_number()
             """The margin of the user is updated recursively every time he proceeds with a purchase, considering the margin of 
                that product and the number of items bought by the user (random number)"""
-            prova=links.get(self.product)
             #devo accedere in qualche modo all'array di prodotti
             first_secondary = products[links.get(self.product.name)[0]]  # TODO: i collegamenti tra i diversi oggetti sono fissi o tipici per classe di utente?
             second_secondary = products[links.get(self.product.name)[1]]

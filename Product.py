@@ -19,6 +19,3 @@ class Product:
 
     def get_daily_margin(self, pos):
         return self.margins[pos]
-
-    def get_selected_price(self):
-        return self.prices.index(self.prices[self.label])

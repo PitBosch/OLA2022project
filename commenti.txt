@@ -54,15 +54,16 @@ ANDRE:
 
 
 ANDRE E BOSCA
--Togliamo product 2 price B
+-Togliamo product 2 price B ----> fatto
 -Aggiungere struttura links in environment B(secondarydict- associazione primary-secondary perchè deve essere fissato,
- ce lo dice la consegna)
+ ce lo dice la consegna) --> mi sembra fatto
 -USercatprob meglio metterlo nella usercat A
--LINEA 36 USER PROBS LINKS E LAMBDA DA TOGLIERE
+-LINEA 36 USER PROBS DA TOGLIERE --->da fare @andre
 -struttura dati primary history if compro if compro sull'altro -> rifare seguendo la logica del exp_return
+--> fatto da checkare se va
 -Gestire bene le simulazioni -> gestire bene tutto quello che è generato randomicamente
 -il margin dato che continuiamo ad azzerarlo ha senso se lo lasciamo come variabile dello scope webpage ma vedi sopra.
--Togliamo margin da usercat, non è relativo alla categoria utente ma è specifico del path/simulazione seguit*
+-Togliamo margin da usercat, non è relativo alla categoria utente ma è specifico del path/simulazione seguit*--> fatto
 -
 
 
