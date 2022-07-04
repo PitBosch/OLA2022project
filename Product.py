@@ -3,7 +3,7 @@ import string
 
 class Product:
     """ Data structure containing all the necessary information about each product"""
-    def __init__(self, prices: [float], label: int, name: string, margins: [float]):
+    def __init__(self, prices: list[float], label: int, name: string, margins: list[float]):
         # List containing all the possible price values for the product
         self.prices = prices
 
