@@ -1,5 +1,6 @@
 import numpy as np
 from copy import copy
+
 def simulate_episode(init_prob_matrix, n_steps_max, alpha):
     prob_matrix=init_prob_matrix.copy() #store matrix
     n_nodes=prob_matrix.shape[0] #number
@@ -16,13 +17,13 @@ def simulate_episode(init_prob_matrix, n_steps_max, alpha):
     #before the simulation of the episode
     #np.ones can be changed in order to give more weight to the competitor
    
-    initial_active_node_idx=np.random.choice(elements_idx, p=alpha.reshape(-1)) #possiamo sostitirla con una multinomial di size =1
-    initial_active_node = np.diag(np.ones(6))[initial_active_node_idx]
+    initial_active_nodes_idx=np.random.choice(elements_idx, p=alpha.reshape(-1)) #possiamo sostitirla con una multinomial di size =1
+    initial_active_nodes = np.diag(np.ones(6))[initial_active_nodes_idx]
     #prendo l'n-esima riga della matrice diagonale, da rivedere la sintassi
-    print(initial_active_node)
+    print(initial_active_nodes)
     history = np.array([initial_active_nodes]) #from a numpy to an array
-    active_nodes=initial_active_nodes
-    newly_active_nodes=active_nodes
+    active_nodes = initial_active_nodes
+    newly_active_nodes = active_nodes
     #I think that these 3 lines can be left the same
     t=0
     #

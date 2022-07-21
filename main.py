@@ -31,44 +31,45 @@ prices=[[4., 5, 6 ,7],
 cost=[2,4.5,9,14,17]
 
 #sarebbe interessante anche prendere da file il tutto così da cambiare tutto più facilmente
-#calcolo i margini dai cost mi sembra più sensato e anche più veloce se dobbiamo cambiare conitnuamente
+#calcolo i margini dai cost mi sembra più sensato e anche più veloce se dobbiamo cambiare continuamente
 
-cost2=np.tile(np.array([cost]).transpose(), (1, 4))
-margins=np.array(prices)-cost2
+cost2 = np.tile(np.array([cost]).transpose(), (1, 4))
+margins = np.array(prices)-cost2
 
-Secondary_dict={
+Secondary_dict={            # Da rivedere, secondo me alcuni suggerimenti sono poco sensati
     "Calabazas": [0,1],
     "Hinojo": [4,3],
     "Sesamo": [0,4],
     "Girasol": [0,2],
     "Amapola": [1,2]
 }
+
 res_price_params={
     "shape": 1,
     "scale": 1,
 }
-probabilities=np.random.uniform(0.0,0.1,(5, 5))
-#matrix generata da una uniform / 5 because it is the number of product
-alphas=[1/10,1/10,1/10,1/10,1/10,1/2]
+
+probabilities = np.random.uniform(0.0,0.1,(5, 5))
+
+#matrix generata da una uniform / 5 because it is the number of product --> Andre: 0.1 come max non è un po' poco?
+
+alphas=[1/10,1/10,1/10,1/10,1/10,1/2] #TODO: cambiare a solo 5 valori
 #per ora li generiamo così, tutti uguali -> devo generare 3 diversi vettori alpha
 
-poisson_lambda=0.7
+poisson_lambda = 1
 #=valore atteso del numero di prodotti acquistati (specifico per prodotto)...non dipende dal
 #prodotto oltre che dallo user che dal tipo di user che
 p_users=[1/3,1/3,1/3] #probabilità di essere un tipo di utente-> da cambiare
 
-lambda_q=0.5 #just my idea of lambda
+lambda_q = 0.5 #just my idea of lambda
 #possiamo stimarlo con i dati passati provenienti dal sito -> vino tot è stato comprato 15 volte
 
 #proviamo a pensare, ha senso vederlo come coppia? categoria-prodotto? Avrei 3 categorie *5 prodotti-> 15 lambda diversi
-
-
-
+# ^^ Andre: secondo me ha senso avere 3 lambda_q diversi per categoria MA non per prodotto. La probabilità di continuare
+#           a guardare secondo me dipende dall'utente e non dal prodotto
 
 for i in range (5):
     products.append(pr.Product(prices[i], i, nameofproduct[i],margins[i]))
-
-
 
 for i in range(3):
     users.append(uc.UserCat(alphas, res_price_params, poisson_lambda, probabilities))
@@ -82,7 +83,7 @@ price_comb=[4.,9,18,24,33] #questa è la soluzione più semplice.
 
 #idealmente qui ci sarà un for dove simulo tutti i giorni e dove price_comb cambia a ogni giorno in base ai diversi algoritmi)
 
-Env.simulate_day(users_number=n_users,users_probs=p_users, price_combination=price_comb) #also p_users will be discarded
+Env.simulate_day(users_number = n_users, users_probs = p_users, price_combination = price_comb) #also p_users will be discarded
 
 #for i in range(0,5): #questo perchè ho 5 prodotti
  #   pr.Product(prices[i], 1, "Calabazas", margins: [float])
