@@ -53,7 +53,7 @@ probabilities = np.random.uniform(0.0,0.1,(5, 5))
 
 #matrix generata da una uniform / 5 because it is the number of product --> Andre: 0.1 come max non è un po' poco?
 
-alphas=[1/10,1/10,1/10,1/10,1/10,1/2] #TODO: cambiare a solo 5 valori
+alphas=[1/5,1/5,1/5,1/5,1/5] #TODO: cambiare a solo 5 valori
 #per ora li generiamo così, tutti uguali -> devo generare 3 diversi vettori alpha
 
 poisson_lambda = 1
@@ -79,7 +79,7 @@ Env = env.Environment(users, products,  lambda_q, Secondary_dict,p_users)
 n_users=1000
 #supponiamo per il test che la combinazione dei prezzi non cambi mai
 
-price_comb=[4.,9,18,24,33] #questa è la soluzione più semplice.
+price_comb=[0,1,2,1,3] #questa è la soluzione più semplice.
 
 #idealmente qui ci sarà un for dove simulo tutti i giorni e dove price_comb cambia a ogni giorno in base ai diversi algoritmi)
 
