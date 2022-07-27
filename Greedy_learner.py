@@ -1,7 +1,3 @@
-from msilib.schema import Environment
-import py_compile
-
-
 from Environment import *
 
 class Greedy_learner: 
@@ -27,9 +23,12 @@ class Greedy_learner:
             if price_combination[i] < 3:
                 new_combination = price_combination.copy() 
                 new_combination[i] += 1
-                new_margins[i] = self.env.simulate_day(self.daily_user_n, new_combination)
-
-        if max(new_margins - actual_margin) > 0:
+                disaggregated_margins = self.env.simulate_day(self.daily_user_n, new_combination)
+                new_margins[i] = sum(disaggregated_margins)
+        print(new_margins)
+        print(actual_margin)
+        diff = np.array(new_margins) - np.array(actual_margin)
+        if max(diff) > 0:
             i_opt = np.argmax(new_margins)
             return_dict["updated"] = True
             return_dict["combination"][i_opt] += 1
@@ -45,7 +44,7 @@ class Greedy_learner:
         # Initially we consider all the lowest prices *Recall that prices are stored in ascending order
         price_combination = [0 for x in self.env.products]
         # Compute the margin for the initial price combination
-        margin = self.env.simulate_day(self.daily_user_n, price_combination)
+        margin = sum(self.env.simulate_day(self.daily_user_n, price_combination))
         # Create a list of list to store the evolution of the algorithm
         history = []
 
@@ -53,8 +52,12 @@ class Greedy_learner:
             history.append(price_combination.copy())
             iter_result = self.greedy_iteration(price_combination,  margin)
             updated = iter_result["updated"]
+            margin = iter_result["margin"]
+
+
 
         iter_result.pop("updated")
+        iter_result["history"] = history
 
         return iter_result
 

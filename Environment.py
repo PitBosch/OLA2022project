@@ -24,11 +24,15 @@ class Environment:
         # passo una price_combination che passo dal main e un product index
         margin = 0.
         
-        if not(user.buy(self.products[product_index].prices[price_combination])) or (self.products[product_index] in user.visited_products) :
+        # retrieve the price of the product indicated by product_index for the current price_combination
+        price_ind = price_combination[product_index]
+        product_price = self.products[product_index].prices[price_ind]
+
+        if not(user.buy(product_price)) or (self.products[product_index] in user.visited_products) :
             return margin
 
         # ho comprato e calcolo quanto ho guadagnato
-        margin = self.products[product_index].margins[price_combination] * user.get_prod_number()
+        margin = self.products[product_index].margins[price_ind] * user.get_prod_number()
         
         """The margin of the user is updated recursively every time he proceeds with a purchase, considering the margin of 
            that product and the number of items bought by the user (random number)"""
@@ -92,8 +96,6 @@ class Environment:
 
             # incremente the daily profit of the website by the profit done with the simulated user
             daily_profit[user_kind] += self.execute(self.users[user_kind], price_combination)
-
-        print(daily_profit)
 
         return daily_profit # list of profit divided for the user category
 

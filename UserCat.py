@@ -18,7 +18,7 @@ class UserCat:
 
         # Economic availability parameters
         self.res_price_params = res_price_params
-        self.res_price = 100 #TODO CAMBIARE RES PRICE, L'HO MESSO COSì SOLO PERCHè VOLEVO FAR GIRARE LA SIMULAZIONE
+        self.res_price = 0.
 
         # Parameter of the distribution which defines the number of purchased self.products in case of buying
         self.poisson_lambda = poisson_lambda
@@ -32,8 +32,6 @@ class UserCat:
         self.u = np.random.uniform() # to extract from the truncated gamma distr
 
     def buy(self, price) -> bool:
-        if self.res_price > price:
-            self.update_res_price()
         return self.res_price > price
 
     def get_prod_number(self):
@@ -43,14 +41,10 @@ class UserCat:
         """Method which extract the starting point of the user visit, if it returns 0 it means that the user has decided
            to visit a competitor website. It also restore the margin, preparing it for the new coming user"""
         self.margin = 0 #questo è da cambiare margin rimane all'interno di
-        return np.random.choice(list(range(6)), p=self.sampled_alphas.reshape(-1))
+        return np.random.choice(list(range(5)), p=self.sampled_alphas.reshape(-1))
 
     def generate_alphas(self):
         self.sampled_alphas = np.random.dirichlet(self.alphas, 1)
-
-    def update_res_price(self):
-        print(" ")  # TODO: ragionare sul sistema di aggiornamento della disponibilità economica nel caso in cui l'utente effettui un acquisto.
-    # ragionevole pensare che un acquisto abbia un impatto sul budget a disposizione.
 
     def sample_res_price(self):
         G_Max = self.gamma.cdf(self.res_price_params['max'])
