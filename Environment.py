@@ -65,9 +65,8 @@ class Environment:
         
         # sample the reservation price of the user considered
         user.sample_res_price()
-
+        # sample which is the first product showed to the user
         page_index = user.start_event()
-        # è il draw dalla random choice per capire su che pagina attero tenendo in considerazione gli alpha
         
         #svuoto i prodotti visitati
         user.empty_visited_products()
@@ -75,7 +74,7 @@ class Environment:
         return self.user_profit(user,price_combination,page_index)
         
 
-    def simulate_day(self, users_number, users_probs, price_combination):
+    def simulate_day(self, users_number, price_combination):
         """Method which simulates the usage of our website into an entire working day. Each day the alphas of each class of users
            are updated according to a Dirichlet distribution, it takes as input number of users, user probability (that now will be
            inside usercat and the price combination of today"""
@@ -89,7 +88,7 @@ class Environment:
         # We simulate the interactions of "users_number" users
         for i in range(users_number):
             # extract the category of the simulated user
-            user_kind = np.random.choice([0, 1, 2], p = users_probs)
+            user_kind = np.random.choice([0, 1, 2], p = self.user_cat_prob)
 
             # incremente the daily profit of the website by the profit done with the simulated user
             daily_profit[user_kind] += self.execute(self.users[user_kind], price_combination)
