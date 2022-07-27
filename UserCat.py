@@ -5,7 +5,11 @@ import scipy.stats
 
 class UserCat:
     """Class containing all the informations required to simulate the behaviour of a particular category in our website"""
-    def __init__(self, alphas: np.array, res_price_params: dict[str], poisson_lambda: float, probabilities: np.array):
+    def __init__(self, alphas: np.array, res_price_params: dict[str], poisson_lambda: float, probabilities: np.array, category = "ciao"):
+        
+        # name of the user category
+        self.category = category
+        
         # Entry proportions between the different self.products (alpha_0: prob of visiting a competitor website)
         self.alphas = alphas
 
