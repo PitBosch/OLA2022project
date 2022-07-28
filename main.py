@@ -83,7 +83,7 @@ price_comb=[0,1,2,1,3] #questa è la soluzione più semplice.
 
 #idealmente qui ci sarà un for dove simulo tutti i giorni e dove price_comb cambia a ogni giorno in base ai diversi algoritmi)
 
-Env.simulate_day(users_number = n_users, users_probs = p_users, price_combination = price_comb) #also p_users will be discarded
+Env.simulate_day(users_number = n_users, price_combination = price_comb) #also p_users will be discarded
 
 #for i in range(0,5): #questo perchè ho 5 prodotti
  #   pr.Product(prices[i], 1, "Calabazas", margins: [float])

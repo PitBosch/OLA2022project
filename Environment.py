@@ -161,15 +161,15 @@ class Environment:
                       (1-q_1) * (1-q_2) * q_link[-1] * self.exp_return(link[-1], primary_history, q_link[:-1], link[:-1], price_combination, user))
     
     def aggregated_reward(self, price_combination):
-        """ Method that compute the expected rewrd related to the prices compbination passed to the function"""
-        # initialize final regret and index j indicating the user category
-        regret = 0.
+        """ Method that compute the expected reward related to the prices compbination passed to the function"""
+        # initialize final  reward and index j indicating the user category
+        reward = 0.
         j = 0
 
         for user_cat in self.users:
-            # intialize the regret relative to the specific user considered and index i for the products
+            # intialize the reward relative to the specific user considered and index i for the products
             i = 0
-            user_regret = 0.
+            user    reward = 0.
             
             # explore the possibility of starting at each product
             for product in self.products:
@@ -177,13 +177,13 @@ class Environment:
                 i += 1
                 # exp_return compute the expected return starting from a specific product, so we have to multiply it 
                 # for the probability of starting from that product (alpha_i)
-                user_regret += alpha_i * self.exp_return(product, [], [0], [Product([], -1, "null", [])], price_combination, user_cat)
+                user    reward += alpha_i * self.exp_return(product, [], [0], [Product([], -1, "null", [])], price_combination, user_cat)
 
-            # the regret is weighted to the mean probability of having a client of a specific user category
-            regret += self.user_cat_prob[j] * user_regret
+            # the   reward is weighted to the mean probability of having a client of a specific user category
+            reward += self.user_cat_prob[j] * user    reward
             j += 1
         
-        return regret
+        return  reward
 
     def single_reward(self, user_index, price_combination):
         """ Method to compute the expected reward for a single user category given a specific price combination for the 5 
@@ -192,8 +192,8 @@ class Environment:
         # select the right user
         user = self.users[user_index]
 
-        # initialize regret and index i for the starting page
-        regret = 0.
+        # initialize    reward and index i for the starting page
+        reward = 0.
         i = 0
 
         for product in self.products:
@@ -201,20 +201,20 @@ class Environment:
             i = i+1
             # exp_return compute the expected return starting from a specific product, so we have to multiply it 
             # for the probability of starting from that product (alpha_i)
-            regret += alpha_i * self.exp_return(product, [], [0], [Product([], -1, "null", [])], price_combination, user)
+            reward += alpha_i * self.exp_return(product, [], [0], [Product([], -1, "null", [])], price_combination, user)
         
-        return regret
+        return  reward
 
     
 
     def optimal_reward(self, user_index = -1):
-        """ This method explores all the possible combination with a brute force approac to determine which is the price combination
+        """ This method explores all the possible combination with a brute force approach to determine which is the price combination
             that returns the highest expected reward.
-            It returns both the optimal price combination and optimal expected regret """
+            It returns both the optimal price combination and optimal expected  reward """
             
         optimal_combination = [0, 0, 0, 0, 0]
-        regret_max = 0
-        regret = 0
+        reward_max = 0
+        reward = 0
         
         # enumerate all possible combinations of prices (4^5, 1024)
         possible_combinations = []
@@ -228,15 +228,15 @@ class Environment:
                             possible_combinations.append([i1, i2, i3, i4, i5])
 
         for price_combination in possible_combinations:       
-            # compute regret for the price combination considered
+            # compute   reward for the price combination considered
             if user_index == -1:
-                regret = self.aggregated_reward(price_combination)
+                reward = self.aggregated_reward(price_combination)
             else :
-                regret = self.single_reward(user_index, price_combination)
+                reward = self.single_reward(user_index, price_combination)
             
-            # update if actual regret is greater than best past regret
-            if regret > regret_max:
-                regret_max = regret
+            # update if actual  reward is greater than best past  reward
+            if  reward >  reward_max:
+                reward_max =  reward
                 optimal_combination = price_combination.copy()
 
-        return regret_max, optimal_combination
+        return  reward_max, optimal_combination
