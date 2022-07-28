@@ -132,7 +132,7 @@ class Environment:
         b_i = user.get_buy_prob(price)
         
         # compute expected margin
-        exp_margin = margin * user.poisson_lambda  # margin * expected number of items bought, that is the poisson parameter
+        exp_margin = margin * (user.poisson_lambda + 1) # margin * expected number of items bought, that is the poisson parameter
 
         # if both secondary items have been already seen we simply return the expected margin and go back to the link
         secondary_list = self.get_secondary(primary)

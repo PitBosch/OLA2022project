@@ -28,14 +28,13 @@ class UserCat:
 
         self.visited_products = []
 
-        self.gamma = scipy.stats.gamma(self.res_price_params['shape'], self.res_price_params['scale'])
-        self.u = np.random.uniform() # to extract from the truncated gamma distr
+        self.gamma = scipy.stats.gamma(a = self.res_price_params['shape'], scale = self.res_price_params['scale'])
 
     def buy(self, price) -> bool:
         return self.res_price > price
 
     def get_prod_number(self):
-        return np.random.poisson(self.poisson_lambda)
+        return np.random.poisson(self.poisson_lambda) + 1
 
     def start_event(self):
         """Method which extract the starting point of the user visit, if it returns 0 it means that the user has decided
@@ -47,9 +46,10 @@ class UserCat:
         self.sampled_alphas = np.random.dirichlet(self.alphas, 1)
 
     def sample_res_price(self):
+        u = np.random.uniform()
         G_Max = self.gamma.cdf(self.res_price_params['max'])
         G_Min = self.gamma.cdf(self.res_price_params['min'])
-        self.res_price = self.gamma.ppf(self.u * (G_Max-G_Min) + G_Min)
+        self.res_price = self.gamma.ppf(u * (G_Max-G_Min) + G_Min)
     
     def get_buy_prob(self, price):
         return 1 - self.gamma.cdf(price)

@@ -2,9 +2,8 @@ from Environment import *
 
 class Greedy_learner: 
 
-    def __init__(self, env: Environment, n: int) -> None :
+    def __init__(self, env: Environment) -> None :
         self.env = env
-        self.daily_user_n = n
 
     def greedy_iteration(self, price_combination: list[int], actual_margin) -> list[int]:
         """ Method for a single iteration of the greedy algorithm. Try to increase the prices for the products
@@ -17,14 +16,14 @@ class Greedy_learner:
 
         # initialize a list of new margins for the price combination
         new_margins = [0 for x in self.env.products]
-
+        
         for i in range(len(self.env.products)) :
             # Compute the value of new_margins for product i IF we are not considering the highest price already
             if price_combination[i] < 3:
                 new_combination = price_combination.copy() 
                 new_combination[i] += 1
-                disaggregated_margins = self.env.simulate_day(self.daily_user_n, new_combination)
-                new_margins[i] = sum(disaggregated_margins)
+                new_margins[i] = self.env.aggregated_reward(new_combination)
+                
         print(new_margins)
         print(actual_margin)
         diff = np.array(new_margins) - np.array(actual_margin)
@@ -44,7 +43,7 @@ class Greedy_learner:
         # Initially we consider all the lowest prices *Recall that prices are stored in ascending order
         price_combination = [0 for x in self.env.products]
         # Compute the margin for the initial price combination
-        margin = sum(self.env.simulate_day(self.daily_user_n, price_combination))
+        margin = self.env.aggregated_reward(price_combination)
         # Create a list of list to store the evolution of the algorithm
         history = []
 
