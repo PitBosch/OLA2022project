@@ -38,9 +38,9 @@ class Environment:
 
         # if the conversion_rate are uncertain, update information retrieved from the simulation
         if "CR_vector" in to_save_dict.keys() :
-            to_save_dict["CR_vector"][1] +=1
+            to_save_dict["CR_vector"][1][product_index] +=1
             if primary_bought:
-                to_save_dict["CR_vector"][0] +=1
+                to_save_dict["CR_vector"][0][product_index] +=1
 
         if not(primary_bought) or (self.products[product_index] in user.visited_products) : #TODO in teoria la seconda condizione non dovrebbe mai verificarsi
             return margin
@@ -111,11 +111,11 @@ class Environment:
         d = len(price_combination)
         to_save_dict = {}
         if "conversion_rate" in to_save :
-            to_save_dict["CR_vector"] = np.zeros((d,2))
+            to_save_dict["CR_vector"] = np.zeros((2,d))
         if "alphas_ratios" in to_save :
             to_save_dict["alphas"] = np.zeros(d)
         if "product_sold" in to_save :
-            to_save_dict["n_prod_sold"] = np.zeros((d,2))
+            to_save_dict["n_prod_sold"] = np.zeros((2,d))
         if "graph_weights" in to_save :
             to_save_dict["graph_weights"] = np.zeros((d,d))
             to_save_dict["visualisations"] = np.zeros((d,d))
@@ -124,8 +124,13 @@ class Environment:
         # Generate daily alpha ratio for each user category for the new day
         for user in self.users:
             user.generate_alphas()
-
-        daily_profit = [0., 0., 0.] # we divide the daily profit for each type of user
+        
+        # If we have more than 1 user we store the daily profit for all users
+        if len(self.users) == 1:
+            daily_profit = [0.]
+        else :
+            daily_profit = np.zeros(len(self.users))
+        
 
         # We simulate the interactions of "users_number" users
         for i in range(users_number):
