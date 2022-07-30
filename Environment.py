@@ -45,32 +45,55 @@ class Environment:
         if not(primary_bought) or (self.products[product_index] in user.visited_products) : #TODO in teoria la seconda condizione non dovrebbe mai verificarsi
             return margin
 
-        # ho comprato e calcolo quanto ho guadagnato
-        margin = self.products[product_index].margins[price_ind] * user.get_prod_number()
+        # User bought the object, so i sample how many products He bought and compute the margin on the sale
+        n_prod_bought = user.get_prod_number()
+        margin = self.products[product_index].margins[price_ind] * n_prod_bought
+
+        # if the numbers of product sold are uncertain, update information retrieved from the simulation
+        if "n_prod_sold" in to_save_dict.keys() :
+            to_save_dict["n_prod_sold"][0][product_index] += n_prod_bought
+            to_save_dict["n_prod_sold"][1][product_index] += 1
         
         """The margin of the user is updated recursively every time he proceeds with a purchase, considering the margin of 
            that product and the number of items bought by the user (random number)"""
         
         #GET THE PRODUCT FROM THE DICT -> POSSO FARLI DIVENTARE DEI METODI
-        first_secondary = self.products[self.Secondary_dict.get(self.products[product_index].name)[0]]
-        second_secondary = self.products[self.Secondary_dict.get(self.products[product_index].name)[1]]
+        first_secondary_index = self.Secondary_dict.get(self.products[product_index].name)[0]
+        first_secondary = self.products[first_secondary_index]
+        second_secondary_index = self.Secondary_dict.get(self.products[product_index].name)[1]
+        second_secondary = self.products[second_secondary_index]
 
         """To simulate the random behaviour of the user we sample from a random distribution and we use it to evaluate whether
            an event has occurred or not. """
         
+        # the user clicks on a secondary if it has never been shown before and with a probability
+        # defined by user.probabilities
+
         first_click = (np.random.uniform() < user.probabilities[
-            self.products[product_index].label, first_secondary.label])
+            self.products[product_index].label, first_secondary.label]) and first_secondary not in user.visited_products
         
         second_click = np.random.uniform() < self.lambda_q * user.probabilities[
-            self.products[product_index].label, second_secondary.label]
+            self.products[product_index].label, second_secondary.label] and second_secondary not in user.visited_products
+        
+        # if the graph weights are uncertain we update the information store in to_save_dict
+        # with respect to the result of the simulation
+        if "graph_weights" in to_save_dict.keys() :
+            # update visualizations for the pairs primary-secondary
+            to_save_dict["visualizations"][product_index][first_secondary_index] += 1
+            to_save_dict["visualizations"][product_index][second_secondary_index] += 1
+            # if in the simulation the user has clicked we update also clicks values
+            if first_click :
+                to_save_dict["clicks"][product_index][first_secondary_index] += 1
+            if second_click :
+                to_save_dict["clicks"][product_index][second_secondary_index] += 1
         
         # click sul primo e non l'ho ancora visitato
-        if first_click and first_secondary not in user.visited_products:
+        if first_click :
             user.visited_products.append(first_secondary)  # add visited product to list
             return margin + self.user_profit(user, price_combination, first_secondary.label, to_save_dict)
         
         #click sul secondo e non l'ho ancora visitato
-        if second_click and second_secondary not in user.visited_products:
+        if second_click :
             user.visited_products.append(second_secondary)  # add visited product to list
             return margin + self.user_profit(user, price_combination, second_secondary.label, to_save_dict)
         
@@ -86,8 +109,8 @@ class Environment:
         # sample which is the first product showed to the user
         page_index = user.start_event()
         # if alphas ratios are uncertain count each time a product is open as first
-        if "alphas_ratios" in to_save_dict.keys() :
-            to_save_dict["alphas_ratios"][page_index] += 1
+        if "alpha_ratios" in to_save_dict.keys() :
+            to_save_dict["alpha_ratios"][page_index] += 1
         
         # svuoto i prodotti visitati
         user.empty_visited_products()
@@ -112,13 +135,16 @@ class Environment:
         to_save_dict = {}
         if "conversion_rate" in to_save :
             to_save_dict["CR_vector"] = np.zeros((2,d))
-        if "alphas_ratios" in to_save :
-            to_save_dict["alphas"] = np.zeros(d)
-        if "product_sold" in to_save :
+
+        if "alpha_ratios" in to_save :
+            to_save_dict["alpha_ratios"] = np.zeros(d)
+
+        if "products_sold" in to_save :
             to_save_dict["n_prod_sold"] = np.zeros((2,d))
+            
         if "graph_weights" in to_save :
             to_save_dict["graph_weights"] = np.zeros((d,d))
-            to_save_dict["visualisations"] = np.zeros((d,d))
+            to_save_dict["visualizations"] = np.zeros((d,d))
             to_save_dict["clicks"] = np.zeros((d,d))
 
         # Generate daily alpha ratio for each user category for the new day
@@ -146,13 +172,24 @@ class Environment:
             # incremente the daily profit of the website by the profit done with the simulated user
             daily_profit[user_kind] += self.execute(self.users[user_kind], price_combination, to_save_dict)
 
-        # if alphas ratio are uncertain save the result obtained by the daily simulation
-        if "alphas_ratios" in to_save :
-            to_save_dict["alphas"] = to_save_dict["alphas"]/np.cumsum(to_save_dict["alphas"])
-
+        # if conversion rates are uncertain save the result obtained by the daily simulation
         if "conversion_rate" in to_save :
             to_save_dict["CR_vector"] = to_save_dict["CR_vector"][0]/(to_save_dict["CR_vector"][1]+0.01)
             # +0.01 at denominator to avoid 0/0 division
+
+        # if alphas ratio are uncertain save the result obtained by the daily simulation
+        if "alpha_ratios" in to_save :
+            to_save_dict["alpha_ratios"] = to_save_dict["alpha_ratios"]/np.sum(to_save_dict["alpha_ratios"])
+        
+        # if number of product sold per product are uncertain save the result obtained by the daily simulation
+        if "products_sold" in to_save :
+            to_save_dict["n_prod_sold"] = to_save_dict["n_prod_sold"][0]/(to_save_dict["n_prod_sold"][1]+0.01)
+        
+        # if number of product sold per product are uncertain save the result obtained by the daily simulation
+        if "graph_weights" in to_save :
+            to_save_dict["graph_weights"] = to_save_dict["clicks"]/(to_save_dict["visualizations"] + 0.01)
+            to_save_dict.pop("clicks")
+            to_save_dict.pop("visualizations") 
 
         to_save_dict["daily_profit"] = daily_profit
         return to_save_dict
