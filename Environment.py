@@ -204,9 +204,9 @@ class Environment:
 
         return secondary_list
 
-    def exp_return(self, primary: Product, primary_history: list[Product], q_link : list[float], 
+    def product_reward(self, primary: Product, primary_history: list[Product], q_link : list[float], 
                     link: list[Product], price_combination, user_index):
-        """ Method to compute the expected return for a singel product. The method is thought to give the priority to the 
+        """ Method to compute the expected reward for a single product. The method is thought to give the priority to the 
             fist secondary product related to the primary product."""
         
         # first check if we have to stop the function, this is the case if:
@@ -241,7 +241,7 @@ class Environment:
         # if all the secondary are in the primary history, we return the expected margin linked to the purchase of the primary
         # and return to the most recent "link"
         if s_1 in primary_history and s_2 in primary_history:
-            return b_i * exp_margin + q_link[-1] * self.exp_return(link[-1], primary_history, q_link[:-1], link[:-1], price_combination, user_index)
+            return b_i * exp_margin + q_link[-1] * self.product_reward(link[-1], primary_history, q_link[:-1], link[:-1], price_combination, user_index)
 
         # all exceptions have been treated, let's now compute the expected return in the basic case
         
@@ -253,9 +253,9 @@ class Environment:
         new_link = link.append(s_2)
         new_q_link = q_link.append(q_2)
 
-        return b_i*(exp_margin + q_1*self.exp_return(s_1, primary_history, new_q_link, new_link, price_combination, user_index) +
-                      (1-q_1) * q_2 * self.exp_return(s_2, primary_history, q_link, link, price_combination, user_index) +
-                      (1-q_1) * (1-q_2) * q_link[-1] * self.exp_return(link[-1], primary_history, q_link[:-1], link[:-1], price_combination, user_index))
+        return b_i*(exp_margin + q_1*self.product_reward(s_1, primary_history, new_q_link, new_link, price_combination, user_index) +
+                      (1-q_1) * q_2 * self.product_reward(s_2, primary_history, q_link, link, price_combination, user_index) +
+                      (1-q_1) * (1-q_2) * q_link[-1] * self.product_reward(link[-1], primary_history, q_link[:-1], link[:-1], price_combination, user_index))
     
     def expected_reward(self, price_combination, conversion_rates = None, alphas_ratio = None, n_prod = None, graph_weights = None):
         """ Method that compute the expected reward related to the prices combination passed to the function.
@@ -360,9 +360,9 @@ class Environment:
         for product in self.products:
             alpha_i = user.alphas[i]
             i = i+1
-            # exp_return compute the expected return starting from a specific product, so we have to multiply it 
+            # product_reward compute the expected return starting from a specific product, so we have to multiply it 
             # for the probability of starting from that product (alpha_i)
-            reward += alpha_i * self.exp_return(product, [], [0], [Product([], -1, "null", [])], price_combination, user_index)
+            reward += alpha_i * self.product_reward(product, [], [0], [Product([], -1, "null", [])], price_combination, user_index)
         
         return  reward
 
