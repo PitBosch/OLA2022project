@@ -1,6 +1,7 @@
 from zmq import NULL
 from UserCat import *
 from Product import *
+import copy
 
 
 class Environment:
@@ -9,6 +10,7 @@ class Environment:
 
     def __init__(self, users: list[UserCat], products: list[Product], lambda_q, Secondary_dict,
                  user_cat_prob):
+        # List of different categories of users considered. If len(users) == 1 --> AGGREGATED DEMAND         
         self.users = users
         # List of available products: each of them has available the information of its position in the list -> attribute label
         self.products = products
@@ -28,7 +30,7 @@ class Environment:
     def user_profit(self, user : UserCat, price_combination, product_index, to_save_dict: dict):
         
         # passo una price_combination che passo dal main e un product index
-        margin = 0.
+        profit = 0.
         
         # retrieve the price of the product indicated by product_index for the current price_combination
         price_ind = price_combination[product_index]
@@ -43,11 +45,11 @@ class Environment:
                 to_save_dict["CR_vector"][0][product_index] +=1
 
         if not(primary_bought) or (self.products[product_index] in user.visited_products) : #TODO in teoria la seconda condizione non dovrebbe mai verificarsi
-            return margin
+            return profit
 
         # User bought the object, so i sample how many products He bought and compute the margin on the sale
         n_prod_bought = user.get_prod_number()
-        margin = self.products[product_index].margins[price_ind] * n_prod_bought
+        profit = self.products[product_index].margins[price_ind] * n_prod_bought
 
         # if the numbers of product sold are uncertain, update information retrieved from the simulation
         if "n_prod_sold" in to_save_dict.keys() :
@@ -90,14 +92,14 @@ class Environment:
         # click sul primo e non l'ho ancora visitato
         if first_click :
             user.visited_products.append(first_secondary)  # add visited product to list
-            return margin + self.user_profit(user, price_combination, first_secondary.label, to_save_dict)
+            return profit + self.user_profit(user, price_combination, first_secondary.label, to_save_dict)
         
         #click sul secondo e non l'ho ancora visitato
         if second_click :
             user.visited_products.append(second_secondary)  # add visited product to list
-            return margin + self.user_profit(user, price_combination, second_secondary.label, to_save_dict)
+            return profit + self.user_profit(user, price_combination, second_secondary.label, to_save_dict)
         
-        return margin
+        return profit
 
 
     def execute(self, user: UserCat, price_combination, to_save_dict: dict):
@@ -118,7 +120,7 @@ class Environment:
         return self.user_profit(user,price_combination, page_index, to_save_dict)
         
 
-    def simulate_day(self, users_number, price_combination, to_save: list):
+    def simulate_day(self, daily_users, price_combination, to_save: list):
         """Method which simulates the usage of our website into an entire working day. Each day the alphas of each class of users
            are updated according to a Dirichlet distribution, it takes as input number of users, user probability (that now will be
            inside usercat and the price combination of today"""
@@ -147,6 +149,12 @@ class Environment:
             to_save_dict["visualizations"] = np.zeros((d,d))
             to_save_dict["clicks"] = np.zeros((d,d))
 
+        # We have to deal with the case of multiple categories of users :
+        # let's create a list of dictionary (1 for each user category) of data to save
+        to_save_data = []
+        for i in range(len(self.users)) :
+            to_save_data.append(copy.deepcopy(to_save_dict))
+
         # Generate daily alpha ratio for each user category for the new day
         for user in self.users:
             user.generate_alphas()
@@ -159,7 +167,7 @@ class Environment:
         
 
         # We simulate the interactions of "users_number" users
-        for i in range(users_number):
+        for i in range(daily_users):
 
             # extract the category of the simulated user
             if len(self.users) == 1 :
@@ -170,29 +178,35 @@ class Environment:
                 user_kind = np.random.choice(user_indices, p = self.user_cat_prob)
 
             # incremente the daily profit of the website by the profit done with the simulated user
-            daily_profit[user_kind] += self.execute(self.users[user_kind], price_combination, to_save_dict)
+            daily_profit[user_kind] += self.execute(self.users[user_kind], price_combination, to_save_data[user_kind])
+            # notice that we have passed only the dictionary for the specific user category sampled
 
-        # if conversion rates are uncertain save the result obtained by the daily simulation
-        if "conversion_rate" in to_save :
-            to_save_dict["CR_vector"] = to_save_dict["CR_vector"][0]/(to_save_dict["CR_vector"][1]+0.01)
-            # +0.01 at denominator to avoid 0/0 division
+        for i in range(len(self.users)) :
+            to_save_dict = to_save_data[i]
+            
+            # if conversion rates are uncertain save the result obtained by the daily simulation
+            if "conversion_rate" in to_save :
+                to_save_dict["CR_vector"] = to_save_dict["CR_vector"][0]/(to_save_dict["CR_vector"][1]+0.01)
+                # +0.01 at denominator to avoid 0/0 division
 
-        # if alphas ratio are uncertain save the result obtained by the daily simulation
-        if "alpha_ratios" in to_save :
-            to_save_dict["alpha_ratios"] = to_save_dict["alpha_ratios"]/np.sum(to_save_dict["alpha_ratios"])
+            # if alphas ratio are uncertain save the result obtained by the daily simulation
+            if "alpha_ratios" in to_save :
+                to_save_dict["alpha_ratios"] = to_save_dict["alpha_ratios"]/np.sum(to_save_dict["alpha_ratios"])
+            
+            # if number of product sold per product are uncertain save the result obtained by the daily simulation
+            if "products_sold" in to_save :
+                to_save_dict["n_prod_sold"] = to_save_dict["n_prod_sold"][0]/(to_save_dict["n_prod_sold"][1]+0.01)
+            
+            # if number of product sold per product are uncertain save the result obtained by the daily simulation
+            if "graph_weights" in to_save :
+                to_save_dict["graph_weights"] = to_save_dict["clicks"]/(to_save_dict["visualizations"] + 0.01)
+                to_save_dict.pop("clicks")
+                to_save_dict.pop("visualizations") 
+            
+            # we store the daily profit (USELESS)
+            # to_save_dict["daily_profit"] = daily_profit/daily_users
         
-        # if number of product sold per product are uncertain save the result obtained by the daily simulation
-        if "products_sold" in to_save :
-            to_save_dict["n_prod_sold"] = to_save_dict["n_prod_sold"][0]/(to_save_dict["n_prod_sold"][1]+0.01)
-        
-        # if number of product sold per product are uncertain save the result obtained by the daily simulation
-        if "graph_weights" in to_save :
-            to_save_dict["graph_weights"] = to_save_dict["clicks"]/(to_save_dict["visualizations"] + 0.01)
-            to_save_dict.pop("clicks")
-            to_save_dict.pop("visualizations") 
-
-        to_save_dict["daily_profit"] = daily_profit
-        return to_save_dict
+        return to_save_data
 
     def get_secondary(self, primary: Product) :
         """ Support method to retrieve the secondary products associated to the primary product considered. The output is a 
@@ -338,10 +352,9 @@ class Environment:
         else :
             # if we have more than one user we have to weight the reward linked to the users with the 
             # theoretical frequencies of the user categories (user_cat_prob)
-            for i in len(self.users):
+            for i in range(len(self.users)) :
                 user_reward = self.single_reward(i, price_combination)
-            
-            reward += self.user_cat_prob[i] * user_reward
+                reward += self.user_cat_prob[i] * user_reward
             
         return  reward
           
@@ -389,11 +402,6 @@ class Environment:
                             possible_combinations.append([i1, i2, i3, i4, i5])
 
         for price_combination in possible_combinations:       
-            
-            #if user_index == -1:
-            #    reward = self.aggregated_reward(price_combination)
-            #else :
-            #    reward = self.single_reward(user_index, price_combination)
             
             # compute the reward for the price combination considered
             reward = self.expected_reward(price_combination)

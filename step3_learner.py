@@ -1,16 +1,18 @@
-from curses.ascii import CR
-from lib2to3.pgen2.grammar import opmap_raw
 from Environment import Environment
 from Greedy_optimizer import Greedy_optimizer
 from scipy.stats import beta
 import numpy as np
-class TS_learner:
+
+
+class TS_learner3:
 
     def __init__(self, beta_parameters, env : Environment):
         # list of 2 matrices n_products x n_prices (5x4 in our case)
         self.beta_parameters = beta_parameters
         # Real environment
         self.env = env
+        # Greedy optimizer to decide the price combination each day
+        self.Greedy_opt = Greedy_optimizer(self.env)
 
     def pull_arms(self):
         # initialize the data structure to store sampled conversion rates
@@ -29,11 +31,12 @@ class TS_learner:
     def update_parameters(self, sampled_CR, estimated_CR, price_combination):
         """ Update beta parameters of arms selected (passed with price_combination) with respect 
             the results of the simulation"""
+
         for prod_ind in range(5) :
             # retrieve the price index for the considered product 
             price_ind = price_combination[prod_ind]
+            
             # update beta parameters with the following procedure:
-
             if sampled_CR > estimated_CR:
                 # in the simulation we have a conversion rate HIGHER than he sampled one
                 # ==> increase parameter a of the corresponding beta ditribution
@@ -46,12 +49,12 @@ class TS_learner:
     def iteration(self, daily_users):
         """ Method to execute a single iteration of the Thompson Sampling Algorithm.
             Objective: choose the right price_combination to maximize expected reward """
+
         # 1) Sample from Beta distributions the estimated conversion rate
         sampled_CR = self.pull_arms()
         
         # 2) Run the Greedy optimizer and select the best combination  
-        greedy_optimizer = Greedy_optimizer(self.env)
-        opt_prices_combination = greedy_optimizer.run(conversion_rates = sampled_CR)["combination"]
+        opt_prices_combination = self.Greedy_opt.run(conversion_rates = sampled_CR)["combination"]
 
         # 3) Fixed the prices for the day simulate the daily user iterations
         estimated_CR = self.env.simulate_day(daily_users, opt_prices_combination, ["conversion_rates"])
@@ -64,6 +67,7 @@ class TS_learner:
     def run(self, n_round = 365, daily_users = 10000) :
         """ Method to run Thompson Sampling algorithm given number of days to be simulated and 
             the number of users simulated in each day """
+
         # Initialize an empty list to store the price_combination decided each day
         history = []
         
