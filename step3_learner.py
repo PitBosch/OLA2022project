@@ -1,6 +1,5 @@
 from Environment import Environment
 from Greedy_optimizer import Greedy_optimizer
-from scipy.stats import beta
 import numpy as np
 
 
@@ -16,7 +15,7 @@ class TS_learner3:
 
     def pull_arms(self):
         # initialize the data structure to store sampled conversion rates
-        CR_sampled = np.zeros(5,4)
+        sampled_CR = np.zeros((5,4))
 
         for prod_ind in range(5):
             for price_ind in range(4):
@@ -24,9 +23,9 @@ class TS_learner3:
                 # sample the conversion rate from beta distributions
                 a = self.beta_parameters[0][prod_ind, price_ind]
                 b = self.beta_parameters[1][prod_ind, price_ind]
-                CR_sampled[prod_ind, price_ind] = beta(a, b)
-        
-        return CR_sampled
+                sampled_CR[prod_ind, price_ind] = np.random.beta(a, b)
+
+        return sampled_CR
 
     def update_parameters(self, sampled_CR, estimated_CR, price_combination):
         """ Update beta parameters of arms selected (passed with price_combination) with respect 
@@ -37,7 +36,7 @@ class TS_learner3:
             price_ind = price_combination[prod_ind]
             
             # update beta parameters with the following procedure:
-            if sampled_CR > estimated_CR:
+            if sampled_CR[prod_ind, price_ind] > estimated_CR[prod_ind]:
                 # in the simulation we have a conversion rate HIGHER than he sampled one
                 # ==> increase parameter a of the corresponding beta ditribution
                 self.beta_parameters[0][prod_ind, price_ind] += 1
@@ -54,10 +53,10 @@ class TS_learner3:
         sampled_CR = self.pull_arms()
         
         # 2) Run the Greedy optimizer and select the best combination  
-        opt_prices_combination = self.Greedy_opt.run(conversion_rates = sampled_CR)["combination"]
+        opt_prices_combination = self.Greedy_opt.run(conversion_rates = [sampled_CR])["combination"]
 
         # 3) Fixed the prices for the day simulate the daily user iterations
-        estimated_CR = self.env.simulate_day(daily_users, opt_prices_combination, ["conversion_rates"])
+        estimated_CR = self.env.simulate_day(daily_users, opt_prices_combination, ["conversion_rates"])['CR_vector']
 
         # 4) Update Beta_parameters according to the simulation done
         self.update_parameters(sampled_CR, estimated_CR, opt_prices_combination)

@@ -135,7 +135,7 @@ class Environment:
         
         d = len(price_combination)
         to_save_dict = {}
-        if "conversion_rate" in to_save :
+        if "conversion_rates" in to_save :
             to_save_dict["CR_vector"] = np.zeros((2,d))
 
         if "alpha_ratios" in to_save :
@@ -185,7 +185,7 @@ class Environment:
             to_save_dict = to_save_data[i]
             
             # if conversion rates are uncertain save the result obtained by the daily simulation
-            if "conversion_rate" in to_save :
+            if "conversion_rates" in to_save :
                 to_save_dict["CR_vector"] = to_save_dict["CR_vector"][0]/(to_save_dict["CR_vector"][1]+0.01)
                 # +0.01 at denominator to avoid 0/0 division
 
@@ -206,6 +206,9 @@ class Environment:
             # we store the daily profit (USELESS)
             # to_save_dict["daily_profit"] = daily_profit/daily_users
         
+        if len(self.users) == 1:
+            to_save_data = to_save_data[0]
+
         return to_save_data
 
     def get_secondary(self, primary: Product) :
