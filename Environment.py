@@ -21,11 +21,57 @@ class Environment:
         # relative frequency of the users category
         self.user_cat_prob = user_cat_prob # TODO:valutare se inserirlo come membro della classe userCat
 
+        """ 4 informations can be certain or uncertain in our simulations :
+            - conversion rate: list of matrices representig the probabilities to buy a product i at a price j for the user k
+            - alpha_ratios : list of lists of probabilities to land on product i at first for user j
+            - nprod : list of average number of product sold for a user
+            - graph_weights : list of matrices describing the probabilities of a click on a
+                secondary product given that we have bought a primary product (a matrix for each user) """
+
         # variable to compute expected reward 
         self.conversion_rates = []
-        self.alphas_ratio = []
+        self.alpha_ratios = []
         self.n_prod_sold = []
         self.graph_weights = []
+
+        # Theoretical values for conversion_rates, alpha_ratios, n_prod_sold and graph_weights
+        self.theoretical_values = {}
+
+        # CONVERSION RATES
+        # compute theoretical values for conversion rate when them are certain
+        self.theoretical_values['conversion_rates'] = []
+        CR_matrix = []
+        CR_list = []
+        for user in self.users:
+            for product in self.products:
+                for price in product.prices:
+                    CR_list.append(user.get_buy_prob(price))
+                
+                CR_matrix.append(CR_list.copy())
+                CR_list = []
+            
+            self.theoretical_values['conversion_rates'].append(CR_matrix.copy())
+            CR_matrix = []
+
+        # ALPHA RATIOS
+        # retrieve theoretical alpha ratios for each user from the UserCat's class variable
+        self.theoretical_values['alpha_ratios'] = []
+
+        for user in self.users:
+                self.theoretical_values['alpha_ratios'].append(user.alphas)
+
+        # NUMBER OF PRODUCT SOLD FOR A FIXED PRICE
+        # when number of product sold is certain is given by the poisson parameter of each user 
+        # (+1 because 0 products bought makes no sense, i.e. we are considered a translated poisson)
+        self.theoretical_values["n_prod_sold"] = []
+        for user in self.users :
+                self.theoretical_values["n_prod_sold"].append(user.poisson_lambda + 1)
+
+        # GRAPH WEIGHTS
+        self.theoretical_values["graph_weights"] = []
+        for user in self.users :
+                self.theoretical_values["graph_weights"].append(user.probabilities)
+        
 
     def user_profit(self, user : UserCat, price_combination, product_index, to_save_dict: dict):
         
@@ -110,7 +156,7 @@ class Environment:
         user.sample_res_price()
         # sample which is the first product showed to the user
         page_index = user.start_event()
-        # if alphas ratios are uncertain count each time a product is open as first
+        # if alpha ratios are uncertain count each time a product is open as first
         if "alpha_ratios" in to_save_dict.keys() :
             to_save_dict["alpha_ratios"][page_index] += 1
         
@@ -127,7 +173,7 @@ class Environment:
 
         # We may need to return also approximation for:
         #   - conversion rates
-        #   - alphas_ratios
+        #   - alpha_ratios
         #   - number of products sold
         #   - graph weights
         # In fact, when one of these variable is uncertain we need its approximation from the simulation
@@ -155,7 +201,7 @@ class Environment:
         for i in range(len(self.users)) :
             to_save_data.append(copy.deepcopy(to_save_dict))
 
-        # Generate daily alpha ratio for each user category for the new day
+        # Generate daily alpha ratios for each user category for the new day
         for user in self.users:
             user.generate_alphas()
         
@@ -189,7 +235,7 @@ class Environment:
                 to_save_dict["CR_vector"] = to_save_dict["CR_vector"][0]/(to_save_dict["CR_vector"][1]+0.01)
                 # +0.01 at denominator to avoid 0/0 division
 
-            # if alphas ratio are uncertain save the result obtained by the daily simulation
+            # if alpha ratios are uncertain save the result obtained by the daily simulation
             if "alpha_ratios" in to_save :
                 to_save_dict["alpha_ratios"] = to_save_dict["alpha_ratios"]/np.sum(to_save_dict["alpha_ratios"])
             
@@ -274,13 +320,13 @@ class Environment:
                       (1-q_1) * q_2 * self.product_reward(s_2, primary_history, q_link, link, price_combination, user_index) +
                       (1-q_1) * (1-q_2) * q_link[-1] * self.product_reward(link[-1], primary_history, q_link[:-1], link[:-1], price_combination, user_index))
     
-    def expected_reward(self, price_combination, conversion_rates = None, alphas_ratio = None, n_prod = None, graph_weights = None):
+    def expected_reward(self, price_combination, conversion_rates = None, alpha_ratios = None, n_prod = None, graph_weights = None):
         """ Method that compute the expected reward related to the prices combination passed to the function.
             If the only argument passed is the price combination the function returns the theoretical expected
             reward.
             The method can receive 4 optional arguments:
                 - conversion rate: list of matrices representig the probabilities to buy a product i at a price j for the user k
-                - alphas_ratio : list of lists of probabilities to land on product i at first for user j
+                - alpha_ratios : list of lists of probabilities to land on product i at first for user j
                 - nprod : list of average number of product sold for a user
                 - graph_weights : list of matrices describing the probabilities of a click on a
                     secondary product given that we have bought a primary product (a matrix for each user)
@@ -288,50 +334,31 @@ class Environment:
             from the theoretical one. In this case the output is the expected reward when argument passed are assumed
             uncertain and we are guessing their true value (e.g. with a bandit algorithm) """
         
-        # At first we have to deal with the argument passed and initialize the variable conversion_rate, alphas_ratio,
+        # At first we have to deal with the argument passed and initialize the variable conversion_rate, alpha_ratios,
         # n_prod_sold and graph_weights of the environment accordingly
 
         # CONVERSION RATES
         if conversion_rates == None:
             # conversion rate is certain, so we consider the theoretical values given by the parameters chosen for
             # the gamma distribution of each user
-            self.conversion_rates = []
-            CR_matrix = []
-            CR_list = []
-            for user in self.users:
-                for product in self.products:
-                    for price in product.prices:
-                        CR_list.append(user.get_buy_prob(price))
-                    
-                    CR_matrix.append(CR_list.copy())
-                    CR_list = []
-                
-                self.conversion_rates.append(CR_matrix.copy())
-                CR_matrix = []
+            self.conversion_rates = self.theoretical_values["conversion_rates"]
         else :
             # conversion rate are uncertain, so we consider the guess passed to the function
             self.conversion_rates = conversion_rates
 
-        # ALPHAS RATIO
-        if alphas_ratio == None :
-            # alphas_ratio are assumed to be certain
-            self.alphas_ratio = []
-
-            for user in self.users:
-                self.alphas_ratio.append(user.alphas)
+        # ALPHA RATIOS
+        if alpha_ratios == None :
+            # alpha_ratios are assumed to be certain
+            self.alpha_ratios = self.theoretical_values["alpha_ratios"]
         
         else :
-            # alphas_ratio uncertain, so we consider the guess passed to the function
-            self.alphas_ratio = alphas_ratio
+            # alpha_ratios uncertain, so we consider the guess passed to the function
+            self.alpha_ratios = alpha_ratios
 
         # NUMBER OF PRODUCT SOLD
         if n_prod == None :
-            # number of product sold is certain and given by the poisson parameter of each user 
-            # (+1 because 0 products bought makes no sense, i.e. we are considered a translated poisson)
-
-            self.n_prod_sold = []
-            for user in self.users :
-                self.n_prod_sold.append(user.poisson_lambda + 1)
+            # number of product sold is certain and we retrieve it bu theoretical values
+            self.n_prod_sold = self.theoretical_values["n_prod_sold"]
         else :
             # number of product sold is uncertain, so we consider a guess of the mean value
             self.n_prod_sold = n_prod
@@ -339,9 +366,8 @@ class Environment:
         # GRAPH WEIGTHS
         if graph_weights == None:
             # Graph weights are considered certain, so we simply use the values stored in the user classes
-            self.graph_weights = []
-            for user in self.users :
-                self.graph_weights.append(user.probabilities)
+            self.graph_weights = self.theoretical_values["graph_weights"]
+            
         else :
             self.graph_weights = graph_weights
 

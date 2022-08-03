@@ -1,12 +1,15 @@
+from Environment import Environment
+from Greedy_optimizer import Greedy_optimizer
 import numpy as np
 
 class Learner:
-    def __init__(self, n_arms):
-        self.n_arms=n_arms
-        self.t=0
-        self.rewards_per_arm=x=[[] for i in range(n_arms)]
-        self.collected_rewards=np.array([])
+    def __init__(self, env : Environment):
+        # Real environment
+        self.env = env
+        # Greedy optimizer to decide the price combination each day
+        self.Greedy_opt = Greedy_optimizer(self.env)
+        # Optimal theoretical reward
+        self.opt_reward = env.optimal_reward()[0]
+        # Initialize history of theoretical rewards 
+        self.reward_history = []
 
-    def update_observations(self,pulled_arm,reward):
-        self.rewards_per_arm[pulled_arm].append(reward)
-        self.collected_rewards=np.append(self.collected_rewards,reward) #da controllare
