@@ -81,13 +81,16 @@ class Environment:
         # retrieve the price of the product indicated by product_index for the current price_combination
         price_ind = price_combination[product_index]
         product_price = self.products[product_index].prices[price_ind]
+        
         # check if the primary product is bought
         primary_bought = user.buy(product_price)
 
         # if the conversion_rate are uncertain, update information retrieved from the simulation
         if "CR_vector" in to_save_dict.keys() :
+            # update number of times users has visualized the product 
             to_save_dict["CR_vector"][1][product_index] +=1
             if primary_bought:
+                # only if the product is bought the number of sales are increased
                 to_save_dict["CR_vector"][0][product_index] +=1
 
         if not(primary_bought) or (self.products[product_index] in user.visited_products) : #TODO in teoria la seconda condizione non dovrebbe mai verificarsi
@@ -162,8 +165,9 @@ class Environment:
         
         # svuoto i prodotti visitati
         user.empty_visited_products()
+        user.visited_products = [self.products[page_index]]
         
-        return self.user_profit(user,price_combination, page_index, to_save_dict)
+        return self.user_profit(user, price_combination, page_index, to_save_dict)
         
 
     def simulate_day(self, daily_users, price_combination, to_save: list):
@@ -267,59 +271,7 @@ class Environment:
 
         return secondary_list
 
-    def product_reward(self, primary: Product, primary_history: list[Product], q_link : list[float], 
-                    link: list[Product], price_combination, user_index):
-        """ Method to compute the expected reward for a single product. The method is thought to give the priority to the 
-            fist secondary product related to the primary product."""
-        
-        # first check if we have to stop the function, this is the case if:
-        # 1) primary is in primary_history --> the probability of the click is zero so the expected return
-        # 2) primary is the "null" product, i.e. we cannot explore further a certain path
-        # if not, add primary to the primary history  
-         
-        if primary in primary_history or primary.label == "null" or link == None:
-            return 0
-        else:
-            primary_history.append(primary)
 
-        # retrieve the margin for the primary product
-        i = primary.label
-        margin = primary.get_daily_margin(price_combination[i])
-        
-        # compute b_i, i.e the probability to buy the primary product considered
-        b_i = self.conversion_rates[user_index][i][price_combination[i]]
-        
-        # compute expected margin
-        exp_margin = margin * (self.n_prod_sold[user_index]) # margin * expected number of items bought, that is the poisson parameter
-
-        # if both secondary items have been already seen we simply return the expected margin and go back to the link
-        secondary_list = self.get_secondary(primary)
-
-        s_1 = secondary_list[0] # for better reading we store the secondary products and their labels
-        s_2 = secondary_list[1]
-        
-        j_1 = s_1.label
-        j_2 = s_2.label
-        
-        # if all the secondary are in the primary history, we return the expected margin linked to the purchase of the primary
-        # and return to the most recent "link"
-        if s_1 in primary_history and s_2 in primary_history:
-            return b_i * exp_margin + q_link[-1] * self.product_reward(link[-1], primary_history, q_link[:-1], link[:-1], price_combination, user_index)
-
-        # all exceptions have been treated, let's now compute the expected return in the basic case
-        
-        
-        # compute probabilities to click on the secondary given that the primary is bought
-        q_1 = self.graph_weights[user_index][i, j_1]
-        q_2 = self.graph_weights[user_index][i, j_2] * self.lambda_q
-
-        new_link = link.append(s_2)
-        new_q_link = q_link.append(q_2)
-
-        return b_i*(exp_margin + q_1*self.product_reward(s_1, primary_history, new_q_link, new_link, price_combination, user_index) +
-                      (1-q_1) * q_2 * self.product_reward(s_2, primary_history, q_link, link, price_combination, user_index) +
-                      (1-q_1) * (1-q_2) * q_link[-1] * self.product_reward(link[-1], primary_history, q_link[:-1], link[:-1], price_combination, user_index))
-    
     def expected_reward(self, price_combination, conversion_rates = None, alpha_ratios = None, n_prod = None, graph_weights = None):
         """ Method that compute the expected reward related to the prices combination passed to the function.
             If the only argument passed is the price combination the function returns the theoretical expected
@@ -408,6 +360,58 @@ class Environment:
         
         return  reward
 
+    def product_reward(self, primary: Product, primary_history: list[Product], q_link : list[float], 
+                    link: list[Product], price_combination, user_index):
+        """ Method to compute the expected reward for a single product. The method is thought to give the priority to the 
+            fist secondary product related to the primary product."""
+        
+        # first check if we have to stop the function, this is the case if:
+        # 1) primary is in primary_history --> the probability of the click is zero so the expected return
+        # 2) primary is the "null" product, i.e. we cannot explore further a certain path
+        # if not, add primary to the primary history  
+         
+        if primary in primary_history or primary.label == "null" or link == None:
+            return 0
+        else:
+            primary_history.append(primary)
+
+        # retrieve the margin for the primary product
+        i = primary.label
+        margin = primary.get_daily_margin(price_combination[i])
+        
+        # compute b_i, i.e the probability to buy the primary product considered
+        b_i = self.conversion_rates[user_index][i][price_combination[i]]
+        
+        # compute expected margin
+        exp_margin = margin * (self.n_prod_sold[user_index]) # margin * expected number of items bought, that is the poisson parameter
+
+        # if both secondary items have been already seen we simply return the expected margin and go back to the link
+        secondary_list = self.get_secondary(primary)
+
+        s_1 = secondary_list[0] # for better reading we store the secondary products and their labels
+        s_2 = secondary_list[1]
+        
+        j_1 = s_1.label
+        j_2 = s_2.label
+        
+        # if all the secondary are in the primary history, we return the expected margin linked to the purchase of the primary
+        # and return to the most recent "link"
+        if s_1 in primary_history and s_2 in primary_history:
+            return b_i * exp_margin + q_link[-1] * self.product_reward(link[-1], primary_history, q_link[:-1], link[:-1], price_combination, user_index)
+
+        # all exceptions have been treated, let's now compute the expected return in the basic case
+        
+        
+        # compute probabilities to click on the secondary given that the primary is bought
+        q_1 = self.graph_weights[user_index][i, j_1]
+        q_2 = self.graph_weights[user_index][i, j_2] * self.lambda_q
+
+        new_link = link.append(s_2)
+        new_q_link = q_link.append(q_2)
+
+        return b_i*(exp_margin + q_1*self.product_reward(s_1, primary_history, new_q_link, new_link, price_combination, user_index) +
+                      (1-q_1) * q_2 * self.product_reward(s_2, primary_history, q_link, link, price_combination, user_index) +
+                      (1-q_1) * (1-q_2) * q_link[-1] * self.product_reward(link[-1], primary_history, q_link[:-1], link[:-1], price_combination, user_index))
     
 
     def optimal_reward(self, user_index = -1):
