@@ -369,8 +369,8 @@ class Environment:
         # 1) primary is in primary_history --> the probability of the click is zero so the expected return
         # 2) primary is the "null" product, i.e. we cannot explore further a certain path
         # if not, add primary to the primary history  
-         
-        if primary in primary_history or primary.label == "null" or link == None:
+        
+        if primary in primary_history or primary.label == -1 or link == None:
             return 0
         else:
             primary_history.append(primary)
@@ -397,7 +397,8 @@ class Environment:
         # if all the secondary are in the primary history, we return the expected margin linked to the purchase of the primary
         # and return to the most recent "link"
         if s_1 in primary_history and s_2 in primary_history:
-            return b_i * exp_margin + q_link[-1] * self.product_reward(link[-1], primary_history, q_link[:-1], link[:-1], price_combination, user_index)
+            return b_i * exp_margin + q_link.copy()[-1] * self.product_reward(link.copy()[-1], primary_history, q_link.copy()[:-1],
+                                                                                link.copy()[:-1], price_combination, user_index)
 
         # all exceptions have been treated, let's now compute the expected return in the basic case
         
@@ -405,13 +406,23 @@ class Environment:
         # compute probabilities to click on the secondary given that the primary is bought
         q_1 = self.graph_weights[user_index][i, j_1]
         q_2 = self.graph_weights[user_index][i, j_2] * self.lambda_q
+        
+        link1 = link.copy()
+        link1.append(s_2)
+        link2 = link.copy()
+        link3 = link.copy()
+        q_link1 = q_link.copy()
+        q_link1.append(q_2)
+        q_link2 = q_link.copy()
+        q_link3 = q_link.copy()
 
-        new_link = link.append(s_2)
-        new_q_link = q_link.append(q_2)
+        prim_hist1 = primary_history.copy()
+        prim_hist2 = primary_history.copy()
+        prim_hist3 = primary_history.copy()
 
-        return b_i*(exp_margin + q_1*self.product_reward(s_1, primary_history, new_q_link, new_link, price_combination, user_index) +
-                      (1-q_1) * q_2 * self.product_reward(s_2, primary_history, q_link, link, price_combination, user_index) +
-                      (1-q_1) * (1-q_2) * q_link[-1] * self.product_reward(link[-1], primary_history, q_link[:-1], link[:-1], price_combination, user_index))
+        return b_i*(exp_margin + q_1 * self.product_reward(s_1, prim_hist1, q_link1, link1, price_combination, user_index) +
+                      (1-q_1) * q_2 * self.product_reward(s_2, prim_hist2, q_link2, link2, price_combination, user_index) +
+                      (1-q_1) * (1-q_2) * q_link3[-1] * self.product_reward(link3[-1], prim_hist3, q_link3[:-1], link3[:-1], price_combination, user_index))
     
 
     def optimal_reward(self, user_index = -1):
