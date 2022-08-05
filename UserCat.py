@@ -40,7 +40,7 @@ class UserCat:
         """Method which extract the starting point of the user visit, if it returns 0 it means that the user has decided
            to visit a competitor website. It also restore the margin, preparing it for the new coming user"""
         self.margin = 0 #questo è da cambiare margin rimane all'interno di
-        return np.random.choice(list(range(5)), p=self.sampled_alphas.reshape(-1))
+        return np.random.choice(list(range(5)), p = self.sampled_alphas.reshape(-1))
 
     def generate_alphas(self):
         self.sampled_alphas = np.random.dirichlet(self.alphas, 1)

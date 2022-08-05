@@ -117,37 +117,41 @@ class Environment:
         """To simulate the random behaviour of the user we sample from a random distribution and we use it to evaluate whether
            an event has occurred or not. """
         
-        # the user clicks on a secondary if it has never been shown before and with a probability
+        # the user clicks on the first secondary if it has never been shown before and with a probability
         # defined by user.probabilities
 
         first_click = (np.random.uniform() < user.probabilities[
             self.products[product_index].label, first_secondary.label]) and first_secondary not in user.visited_products
-        
-        second_click = np.random.uniform() < self.lambda_q * user.probabilities[
-            self.products[product_index].label, second_secondary.label] and second_secondary not in user.visited_products
-        
-        # if the graph weights are uncertain we update the information store in to_save_dict
-        # with respect to the result of the simulation
-        if "graph_weights" in to_save_dict.keys() :
-            # update visualizations for the pairs primary-secondary
-            to_save_dict["visualizations"][product_index][first_secondary_index] += 1
-            to_save_dict["visualizations"][product_index][second_secondary_index] += 1
-            # if in the simulation the user has clicked we update also clicks values
-            if first_click :
-                to_save_dict["clicks"][product_index][first_secondary_index] += 1
-            if second_click :
-                to_save_dict["clicks"][product_index][second_secondary_index] += 1
         
         # click sul primo e non l'ho ancora visitato
         if first_click :
             user.visited_products.append(first_secondary)  # add visited product to list
             return profit + self.user_profit(user, price_combination, first_secondary.label, to_save_dict)
         
+        # the user clicks on the second secondary if it has never been shown before and with a probability
+        # defined by user.probabilities
+        second_click = np.random.uniform() < self.lambda_q * user.probabilities[
+            self.products[product_index].label, second_secondary.label] and second_secondary not in user.visited_products
+
         #click sul secondo e non l'ho ancora visitato
         if second_click :
             user.visited_products.append(second_secondary)  # add visited product to list
             return profit + self.user_profit(user, price_combination, second_secondary.label, to_save_dict)
         
+        # if the graph weights are uncertain we update the information store in to_save_dict
+        # with respect to the result of the simulation
+        if "graph_weights" in to_save_dict.keys() :
+            # update visualizations for the pairs primary-secondary only if we have not already seen the product
+            if first_secondary not in user.visited_products :
+                to_save_dict["visualizations"][product_index][first_secondary_index] += 1
+            if second_secondary not in user.visited_products :
+                to_save_dict["visualizations"][product_index][second_secondary_index] += 1
+            # if in the simulation the user has clicked we update also clicks values
+            if first_click :
+                to_save_dict["clicks"][product_index][first_secondary_index] += 1
+            if second_click :
+                to_save_dict["clicks"][product_index][second_secondary_index] += 1
+
         return profit
 
 
@@ -420,9 +424,9 @@ class Environment:
         prim_hist2 = primary_history.copy()
         prim_hist3 = primary_history.copy()
 
-        return b_i*(exp_margin + q_1 * self.product_reward(s_1, prim_hist1, q_link1, link1, price_combination, user_index) +
-                      (1-q_1) * q_2 * self.product_reward(s_2, prim_hist2, q_link2, link2, price_combination, user_index) +
-                      (1-q_1) * (1-q_2) * q_link3[-1] * self.product_reward(link3[-1], prim_hist3, q_link3[:-1], link3[:-1], price_combination, user_index))
+        return (b_i*(exp_margin + q_1 * self.product_reward(s_1, prim_hist1, q_link1, link1, price_combination, user_index) +
+                    (1-q_1) * q_2 * self.product_reward(s_2, prim_hist2, q_link2, link2, price_combination, user_index)) +
+                (1 - b_i + b_i * (1-q_1) * (1-q_2) )* q_link3[-1] * self.product_reward(link3[-1], prim_hist3, q_link3[:-1], link3[:-1], price_combination, user_index) )
     
 
     def optimal_reward(self, user_index = -1):
