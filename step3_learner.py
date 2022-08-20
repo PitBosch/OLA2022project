@@ -1,13 +1,15 @@
 from Learner import *
 
-
 class TS_learner3(Learner):
 
     def __init__(self, beta_parameters, env : Environment):
         # call initializer of super class
         super().__init__(env)
         # list of 2 matrices n_products x n_prices (5x4 in our case)
-        self.beta_parameters = beta_parameters
+        self.initial_beta = []
+        self.initial_beta.append(beta_parameters[0].copy())
+        self.initial_beta.append(beta_parameters[1].copy())
+        self.beta_parameters = []
         
         
 
@@ -68,6 +70,10 @@ class TS_learner3(Learner):
 
         # Initialize an empty list to store the price_combination decided each day
         rewards = []
+        # Set beta_parameters to initial values
+        self.beta_parameters = []
+        self.beta_parameters.append(self.initial_beta[0].copy())
+        self.beta_parameters.append(self.initial_beta[1].copy())
         
         for i in range(n_round) :
             # Do a single iteration of the TS andd store the price combination chosen in the iteration
