@@ -4,6 +4,8 @@ from Product import *
 import copy
 
 
+
+
 class Environment:
     """Class containing all the informations that characterize the problem, from the classes of users to the list of available
        products. """
@@ -50,7 +52,7 @@ class Environment:
                 CR_matrix.append(CR_list.copy())
                 CR_list = []
             
-            self.theoretical_values['conversion_rates'].append(CR_matrix.copy())
+            self.theoretical_values['conversion_rates'].append(CR_matrix.copy())  # EXPECTED
             CR_matrix = []
 
         # ALPHA RATIOS
@@ -58,14 +60,15 @@ class Environment:
         self.theoretical_values['alpha_ratios'] = []
 
         for user in self.users:
-                self.theoretical_values['alpha_ratios'].append(user.alphas)
+                alpha_distr = [x / sum(user.alphas) for x in user.alphas]
+                self.theoretical_values['alpha_ratios'].append(alpha_distr)
 
         # NUMBER OF PRODUCT SOLD FOR A FIXED PRICE
         # when number of product sold is certain is given by the poisson parameter of each user 
         # (+1 because 0 products bought makes no sense, i.e. we are considered a translated poisson)
         self.theoretical_values["n_prod_sold"] = []
         for user in self.users :
-                self.theoretical_values["n_prod_sold"].append(user.poisson_lambda + 1)
+                self.theoretical_values["n_prod_sold"].append(user.poisson_lambda + 1) # EXPECTED
 
         # GRAPH WEIGHTS
         self.theoretical_values["graph_weights"] = []
@@ -93,7 +96,7 @@ class Environment:
                 # only if the product is bought the number of sales are increased
                 to_save_dict["CR_vector"][0][product_index] +=1
 
-        if not(primary_bought) or (self.products[product_index] in user.visited_products) : #TODO in teoria la seconda condizione non dovrebbe mai verificarsi
+        if not(primary_bought) : 
             return profit
 
         # User bought the object, so i sample how many products He bought and compute the margin on the sale
@@ -123,6 +126,17 @@ class Environment:
         first_click = (np.random.uniform() < user.probabilities[
             self.products[product_index].label, first_secondary.label]) and first_secondary not in user.visited_products
         
+        # if the graph weights are uncertain we update the information store in to_save_dict
+        # with respect to the result of the simulation
+        if "graph_weights" in to_save_dict.keys() :
+            # update visualizations for the pairs primary-secondary only if we have not already seen the product
+            if first_secondary not in user.visited_products :
+                to_save_dict["visualizations"][product_index][first_secondary_index] += 1
+
+            # if in the simulation the user has clicked we update also clicks values
+            if first_click :
+                to_save_dict["clicks"][product_index][first_secondary_index] += 1
+
         # click sul primo e non l'ho ancora visitato
         if first_click :
             user.visited_products.append(first_secondary)  # add visited product to list
@@ -132,6 +146,16 @@ class Environment:
         # defined by user.probabilities
         second_click = np.random.uniform() < self.lambda_q * user.probabilities[
             self.products[product_index].label, second_secondary.label] and second_secondary not in user.visited_products
+        
+        # if the graph weights are uncertain we update the information store in to_save_dict
+        # with respect to the result of the simulation
+        if "graph_weights" in to_save_dict.keys() :
+            # update visualizations for the pairs primary-secondary only if we have not already seen the product
+            if second_secondary not in user.visited_products :
+                to_save_dict["visualizations"][product_index][second_secondary_index] += 1
+            # if in the simulation the user has clicked we update also clicks values
+            if second_click :
+                to_save_dict["clicks"][product_index][second_secondary_index] += 1
 
         #click sul secondo e non l'ho ancora visitato
         if second_click :
@@ -356,7 +380,7 @@ class Environment:
         i = 0
 
         for product in self.products:
-            alpha_i = user.alphas[i]
+            alpha_i = self.theoretical_values['alpha_ratios'][user_index][i]
             i = i+1
             # product_reward compute the expected return starting from a specific product, so we have to multiply it 
             # for the probability of starting from that product (alpha_i)
@@ -374,7 +398,7 @@ class Environment:
         # 2) primary is the "null" product, i.e. we cannot explore further a certain path
         # if not, add primary to the primary history  
         
-        if primary in primary_history or primary.label == -1 or link == None:
+        if primary in primary_history or primary.label == -1 :
             return 0
         else:
             primary_history.append(primary)
@@ -405,7 +429,6 @@ class Environment:
                                                                                 link.copy()[:-1], price_combination, user_index)
 
         # all exceptions have been treated, let's now compute the expected return in the basic case
-        
         
         # compute probabilities to click on the secondary given that the primary is bought
         q_1 = self.graph_weights[user_index][i, j_1]
@@ -460,3 +483,98 @@ class Environment:
                 optimal_combination = price_combination.copy()
 
         return  reward_max, optimal_combination
+
+    class Graph_path:
+        def __init__(self) :
+            self.primary_seen = []
+            self.probability = 1
+            self.collected_margin = 0
+            self.link = [-1]
+            self.link_prob = [0]
+        
+        def __init__(self, info_dict):
+            self.primary_seen = info_dict['primary_seen']
+            self.probability = info_dict['probability']
+            self.collected_margin = info_dict['collected_margin']
+            self.link = info_dict['link']
+            self.link_prob = info_dict['link_prob']
+
+        def copy_info(self) :
+            info_dict = {}
+            info_dict['primary_seen'] = self.primary_seen.copy()
+            info_dict['probability'] = self.probability
+            info_dict['collected_margin'] = self.collected_margin
+            info_dict['link'] = self.link.copy()
+            info_dict['link_prob'] = info_dict.copy()
+            return info_dict
+
+        def expected_return(self):
+            return self.probability*self.collected_margin
+
+    def explore_path(self, paths_list: list[Graph_path], path : Graph_path, primary_index, price_combination, user_index) :
+        
+        # initialization of paths_list in the case it is empty
+        if paths_list == [] :
+            initial_path = self.Graph_path()
+            path = initial_path
+
+        if new_primary1 == -1:
+            path1 = self.Graph_path(path.copy_info)
+            path2 = self.Graph_path(path.copy_info)
+
+            new_primary1 = path1.link.pop()
+            path1.probability *= path1.link_prob.pop()
+            self.explore_path(paths_list, path1, new_primary1, price_combination, user_index)
+
+            new_primary2 = -1
+            path2.link.pop()
+            path2.probability *= 1 - path2.link_prob.pop()
+            self.explore(paths_list, path2, new_primary2, price_combination, user_index)
+
+            return
+
+        # add the primary index to the list of seen primary of the path
+        path.primary_seen.append(primary_index)
+
+        # retrieve secondary products indeces
+        primary_name = self.products[primary_index].name
+        sec_ind1 = self.Secondary_dict[primary_name][0]
+        sec_ind2 = self.Secondary_dict[primary_name][1]
+
+        # compute b_i, i.e the probability to buy the primary product considered
+        b_i = self.conversion_rates[user_index][primary_index][price_combination[primary_index]]
+        
+        # compute expected margin
+        margin = self.products[primary_index].get_daily_margin(price_combination[primary_index])
+        exp_margin = margin * (self.n_prod_sold[user_index]) # margin * expected number of items bought, that is the poisson parameter
+
+        # compute probabilities to click on the secondary given that the primary is bought
+        q_1 = self.graph_weights[user_index][primary_index, sec_ind1]
+        q_2 = self.graph_weights[user_index][primary_index, sec_ind2] * self.lambda_q
+
+        # Path where user does NOT buy the product
+            # create new path as copy of the prrevious one
+        path1 = self.Graph_path(path.copy_info)
+            # update the probability according to the event: "product not bought"
+        path1.probability *= 1 - b_i
+        
+            # 2 possibilities:
+            # a) we cannot explore the path anymore, so we append the path to paths_list and terminate the exploration
+            # b) we can explore the path further so we explore the possible cases
+        if path1.link[-1] == -1 : 
+            paths_list.append(path1)
+            return
+        else :
+            new_primary = -1
+            self.explore_path(paths_list, path1, new_primary, price_combination, user_index)
+
+
+        # if possible, explore the case to click on the first secondary and then append secondo secondary on link
+        if sec_ind1 not in path.primary_seen :
+            return
+
+        if sec_ind2 not in path.primary_seen :
+            return
+
+
+

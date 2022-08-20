@@ -54,8 +54,6 @@ class Greedy_optimizer:
             updated = iter_result["updated"]
             optimal_reward = iter_result["expected_reward"]
 
-
-
         iter_result.pop("updated")
         # iter_result["history"] = history
 
