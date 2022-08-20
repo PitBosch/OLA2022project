@@ -30,18 +30,13 @@ class Environment:
             - graph_weights : list of matrices describing the probabilities of a click on a
                 secondary product given that we have bought a primary product (a matrix for each user) """
 
-        # variable to compute expected reward 
-        self.conversion_rates = []
-        self.alpha_ratios = []
-        self.n_prod_sold = []
-        self.graph_weights = []
-
         # Theoretical values for conversion_rates, alpha_ratios, n_prod_sold and graph_weights
         self.theoretical_values = {}
 
         # CONVERSION RATES
         # compute theoretical values for conversion rate when them are certain
         self.theoretical_values['conversion_rates'] = []
+        self.conversion_rates = []
         CR_matrix = []
         CR_list = []
         for user in self.users:
@@ -53,33 +48,37 @@ class Environment:
                 CR_list = []
             
             self.theoretical_values['conversion_rates'].append(CR_matrix.copy())  # EXPECTED
+            self.conversion_rates.append(CR_matrix.copy())
             CR_matrix = []
 
         # ALPHA RATIOS
         # retrieve theoretical alpha ratios for each user from the UserCat's class variable
         self.theoretical_values['alpha_ratios'] = []
+        self.alpha_ratios = []
 
         for user in self.users:
                 alpha_distr = [x / sum(user.alphas) for x in user.alphas]
-                self.theoretical_values['alpha_ratios'].append(alpha_distr)
+                self.theoretical_values['alpha_ratios'].append(alpha_distr.copy())
+                self.alpha_ratios.append(alpha_distr.copy())
 
         # NUMBER OF PRODUCT SOLD FOR A FIXED PRICE
         # when number of product sold is certain is given by the poisson parameter of each user 
         # (+1 because 0 products bought makes no sense, i.e. we are considered a translated poisson)
         self.theoretical_values["n_prod_sold"] = []
+        self.n_prod_sold = []
         for user in self.users :
                 self.theoretical_values["n_prod_sold"].append(user.poisson_lambda + 1) # EXPECTED
+                self.n_prod_sold.append(user.poisson_lambda + 1)
 
         # GRAPH WEIGHTS
         self.theoretical_values["graph_weights"] = []
-        for user in self.users :
-                self.theoretical_values["graph_weights"].append(user.probabilities)
+        self.graph_weights = []
         
+        for user in self.users :
+            self.theoretical_values["graph_weights"].append(user.probabilities)
+            self.graph_weights.append(user.probabilities.copy())
 
     def user_profit(self, user : UserCat, price_combination, product_index, to_save_dict: dict):
-        
-        # passo una price_combination che passo dal main e un product index
-        profit = 0.
         
         # retrieve the price of the product indicated by product_index for the current price_combination
         price_ind = price_combination[product_index]
@@ -97,7 +96,7 @@ class Environment:
                 to_save_dict["CR_vector"][0][product_index] +=1
 
         if not(primary_bought) : 
-            return profit
+            return
 
         # User bought the object, so i sample how many products He bought and compute the margin on the sale
         n_prod_bought = user.get_prod_number()
@@ -140,7 +139,7 @@ class Environment:
         # click sul primo e non l'ho ancora visitato
         if first_click :
             user.visited_products.append(first_secondary)  # add visited product to list
-            return profit + self.user_profit(user, price_combination, first_secondary.label, to_save_dict)
+            self.user_profit(user, price_combination, first_secondary.label, to_save_dict)
         
         # the user clicks on the second secondary if it has never been shown before and with a probability
         # defined by user.probabilities
@@ -160,23 +159,9 @@ class Environment:
         #click sul secondo e non l'ho ancora visitato
         if second_click :
             user.visited_products.append(second_secondary)  # add visited product to list
-            return profit + self.user_profit(user, price_combination, second_secondary.label, to_save_dict)
+            self.user_profit(user, price_combination, second_secondary.label, to_save_dict)
         
-        # if the graph weights are uncertain we update the information store in to_save_dict
-        # with respect to the result of the simulation
-        if "graph_weights" in to_save_dict.keys() :
-            # update visualizations for the pairs primary-secondary only if we have not already seen the product
-            if first_secondary not in user.visited_products :
-                to_save_dict["visualizations"][product_index][first_secondary_index] += 1
-            if second_secondary not in user.visited_products :
-                to_save_dict["visualizations"][product_index][second_secondary_index] += 1
-            # if in the simulation the user has clicked we update also clicks values
-            if first_click :
-                to_save_dict["clicks"][product_index][first_secondary_index] += 1
-            if second_click :
-                to_save_dict["clicks"][product_index][second_secondary_index] += 1
-
-        return profit
+        return
 
 
     def execute(self, user: UserCat, price_combination, to_save_dict: dict):
@@ -195,7 +180,9 @@ class Environment:
         user.empty_visited_products()
         user.visited_products = [self.products[page_index]]
         
-        return self.user_profit(user, price_combination, page_index, to_save_dict)
+        self.user_profit(user, price_combination, page_index, to_save_dict)
+        
+        return
         
 
     def simulate_day(self, daily_users, price_combination, to_save: list):
@@ -236,13 +223,6 @@ class Environment:
         # Generate daily alpha ratios for each user category for the new day
         for user in self.users:
             user.generate_alphas()
-        
-        # If we have more than 1 user we store the daily profit for all users
-        if len(self.users) == 1:
-            daily_profit = [0.]
-        else :
-            daily_profit = np.zeros(len(self.users))
-        
 
         # We simulate the interactions of "users_number" users
         for i in range(daily_users):
@@ -256,7 +236,7 @@ class Environment:
                 user_kind = np.random.choice(user_indices, p = self.user_cat_prob)
 
             # incremente the daily profit of the website by the profit done with the simulated user
-            daily_profit[user_kind] += self.execute(self.users[user_kind], price_combination, to_save_data[user_kind])
+            self.execute(self.users[user_kind], price_combination, to_save_data[user_kind])
             # notice that we have passed only the dictionary for the specific user category sampled
 
         for i in range(len(self.users)) :
@@ -321,7 +301,7 @@ class Environment:
         if conversion_rates == None:
             # conversion rate is certain, so we consider the theoretical values given by the parameters chosen for
             # the gamma distribution of each user
-            self.conversion_rates = self.theoretical_values["conversion_rates"]
+            self.conversion_rates = copy.deepcopy(self.theoretical_values["conversion_rates"])
         else :
             # conversion rate are uncertain, so we consider the guess passed to the function
             self.conversion_rates = conversion_rates
@@ -329,7 +309,7 @@ class Environment:
         # ALPHA RATIOS
         if alpha_ratios == None :
             # alpha_ratios are assumed to be certain
-            self.alpha_ratios = self.theoretical_values["alpha_ratios"]
+            self.alpha_ratios = copy.deepcopy(self.theoretical_values["alpha_ratios"])
         
         else :
             # alpha_ratios uncertain, so we consider the guess passed to the function
@@ -338,7 +318,7 @@ class Environment:
         # NUMBER OF PRODUCT SOLD
         if n_prod == None :
             # number of product sold is certain and we retrieve it bu theoretical values
-            self.n_prod_sold = self.theoretical_values["n_prod_sold"]
+            self.n_prod_sold = copy.deepcopy(self.theoretical_values["n_prod_sold"])
         else :
             # number of product sold is uncertain, so we consider a guess of the mean value
             self.n_prod_sold = n_prod
@@ -346,7 +326,7 @@ class Environment:
         # GRAPH WEIGTHS
         if graph_weights == None:
             # Graph weights are considered certain, so we simply use the values stored in the user classes
-            self.graph_weights = self.theoretical_values["graph_weights"]
+            self.graph_weights = copy.deepcopy(self.theoretical_values["graph_weights"])
             
         else :
             self.graph_weights = graph_weights
@@ -492,20 +472,39 @@ class Environment:
             self.link = [-1]
             self.link_prob = [0]
         
-        def __init__(self, info_dict):
-            self.primary_seen = info_dict['primary_seen']
-            self.probability = info_dict['probability']
-            self.collected_margin = info_dict['collected_margin']
-            self.link = info_dict['link']
-            self.link_prob = info_dict['link_prob']
+        def __init__(self, info_dict = None):
+            if info_dict == None :
+                self.primary_seen = []
+                self.primary_bought = []
+                self.probability = 1
+                self.collected_margin = 0
+                self.link = [-1]
+                self.link_prob = [0]
+            else :
+                self.primary_seen = info_dict['primary_seen']
+                self.primary_bought = info_dict['primary_bought']
+                self.probability = info_dict['probability']
+                self.collected_margin = info_dict['collected_margin']
+                self.link = info_dict['link']
+                self.link_prob = info_dict['link_prob']
+
+        def __str__(self) :
+            output = ""
+            output += "primary seen : " + str(self.primary_seen) + "\n"
+            output += "primary bought : " + str(self.primary_bought) + "\n"
+            output += "probability : " + str(self.probability) + "\n"
+            output += "collected_margin : " + str(self.collected_margin) + "\n"
+            return output
+
 
         def copy_info(self) :
             info_dict = {}
             info_dict['primary_seen'] = self.primary_seen.copy()
+            info_dict['primary_bought'] = self.primary_bought.copy() 
             info_dict['probability'] = self.probability
             info_dict['collected_margin'] = self.collected_margin
             info_dict['link'] = self.link.copy()
-            info_dict['link_prob'] = info_dict.copy()
+            info_dict['link_prob'] = self.link_prob.copy()
             return info_dict
 
         def expected_return(self):
@@ -513,23 +512,49 @@ class Environment:
 
     def explore_path(self, paths_list: list[Graph_path], path : Graph_path, primary_index, price_combination, user_index) :
         
-        # initialization of paths_list in the case it is empty
-        if paths_list == [] :
-            initial_path = self.Graph_path()
-            path = initial_path
+        # initialization of paths in the case it is None
+        if path == None :
+            path = self.Graph_path()
 
-        if new_primary1 == -1:
-            path1 = self.Graph_path(path.copy_info)
-            path2 = self.Graph_path(path.copy_info)
+        # if primary_index = -1 it means the path has jumped to an unexplored second secondary product
+        if primary_index == -1:
+            
+            # first at all check if the second secondary is in already visited product
+            path0 = self.Graph_path(path.copy_info())
+            if path0.link[-1] in path0.primary_seen :
+                path0.link.pop()
+                path0.link_prob.pop()
+                if path0.link[-1] == -1:
+                    paths_list.append(path0)
+                else :
+                    self.explore_path(paths_list, path0, -1, price_combination, user_index)
 
+                return
+
+            # now explore tha case where second secondary can be clicked
+            # we have 2 possible new paths:
+            # 1) we click on the second secondary stored as last element ok path.link
+            # 2) we do NOT click
+            path1 = self.Graph_path(path.copy_info())
+            path2 = self.Graph_path(path.copy_info())
+
+            # 1) we click, so we explore a new path with the second secondary considered as primary
             new_primary1 = path1.link.pop()
             path1.probability *= path1.link_prob.pop()
             self.explore_path(paths_list, path1, new_primary1, price_combination, user_index)
 
-            new_primary2 = -1
+            # 2) we do NOT click, so we have 2 possible situations:
+            # a) there are not other second secondary to jump to
+            # b) there is at least another second secondary to be explored and we explore it
             path2.link.pop()
             path2.probability *= 1 - path2.link_prob.pop()
-            self.explore(paths_list, path2, new_primary2, price_combination, user_index)
+
+            # a)
+            if path2.link[-1] == -1 :
+                paths_list.append(path2)
+            # b)
+            else :
+                self.explore_path(paths_list, path2, -1, price_combination, user_index)
 
             return
 
@@ -538,8 +563,8 @@ class Environment:
 
         # retrieve secondary products indeces
         primary_name = self.products[primary_index].name
-        sec_ind1 = self.Secondary_dict[primary_name][0]
-        sec_ind2 = self.Secondary_dict[primary_name][1]
+        sec1_ind = self.Secondary_dict[primary_name][0]
+        sec2_ind = self.Secondary_dict[primary_name][1]
 
         # compute b_i, i.e the probability to buy the primary product considered
         b_i = self.conversion_rates[user_index][primary_index][price_combination[primary_index]]
@@ -549,32 +574,206 @@ class Environment:
         exp_margin = margin * (self.n_prod_sold[user_index]) # margin * expected number of items bought, that is the poisson parameter
 
         # compute probabilities to click on the secondary given that the primary is bought
-        q_1 = self.graph_weights[user_index][primary_index, sec_ind1]
-        q_2 = self.graph_weights[user_index][primary_index, sec_ind2] * self.lambda_q
+        q_1 = self.graph_weights[user_index][primary_index, sec1_ind]
+        q_2 = self.graph_weights[user_index][primary_index, sec2_ind] * self.lambda_q
 
+        ######################
+        # PRIMARY NOT BOUGHT #
+        ######################
         # Path where user does NOT buy the product
             # create new path as copy of the prrevious one
-        path1 = self.Graph_path(path.copy_info)
+        path1 = self.Graph_path(path.copy_info())
             # update the probability according to the event: "product not bought"
         path1.probability *= 1 - b_i
         
             # 2 possibilities:
             # a) we cannot explore the path anymore, so we append the path to paths_list and terminate the exploration
-            # b) we can explore the path further so we explore the possible cases
+            # b) we have a second secondary to be clicked --> pass -1 as new primary to deal with this case
         if path1.link[-1] == -1 : 
             paths_list.append(path1)
-            return
         else :
-            new_primary = -1
-            self.explore_path(paths_list, path1, new_primary, price_combination, user_index)
+            self.explore_path(paths_list, path1, -1, price_combination, user_index)
 
+        #####################
+        # PRIMARY IS BOUGHT #
+        #####################
+        path2 = self.Graph_path(path.copy_info())
+        path2.probability *= b_i
+        path2.collected_margin += exp_margin
+        path2.primary_bought.append(primary_index)
 
-        # if possible, explore the case to click on the first secondary and then append secondo secondary on link
-        if sec_ind1 not in path.primary_seen :
+        # first we check if is possible to click on the secondary, otherwise we have no path to explore
+        sec1_seen = sec1_ind in path.primary_seen
+        sec2_seen = sec2_ind in path.primary_seen
+
+        if sec1_seen and sec2_seen :
+            if path2.link[-1] == -1 :
+                paths_list.append(path2)
+            else :
+                self.explore_path(paths_list, path2, -1, price_combination, user_index)
             return
 
-        if sec_ind2 not in path.primary_seen :
+        if sec1_seen:
+            # we know for sure that sec2 can be seen and we can't click on sec1
+
+            # 1) we click on sec2 and explore the related path
+            path3 = self.Graph_path(path2.copy_info())
+            path3.probability *= q_2
+            self.explore_path(paths_list, path3, sec2_ind, price_combination, user_index)
+
+            # 2) we do NOT click on sec2 and there two possible situation:
+            # a) NO past second secondary to return to : stop exploration
+            # b) past second secondary to explore : explore this path
+            path4 = self.Graph_path(path2.copy_info())
+            path4.probability *= 1-q_2
+
+            if path4.link[-1] == -1 :
+                paths_list.append(path4)
+            else :
+                self.explore_path(paths_list, path4, -1, price_combination, user_index)
+            
             return
 
 
+        if sec2_seen:
+            # we know for sure that sec1 can be seen and we can't click on sec2
 
+            # 1) we click on sec1 and explore the related path
+            path3 = self.Graph_path(path2.copy_info())
+            path3.probability *= q_1
+            self.explore_path(paths_list, path3, sec1_ind, price_combination, user_index)
+
+            # 2) we do NOT click on sec1 and there two possible situation:
+            # a) NO past second secondary to return to : path is closed
+            # b) past second secondary to explore : explore this path
+            path4 = self.Graph_path(path2.copy_info())
+            path4.probability *= 1-q_1
+
+            if path4.link[-1] == -1 :
+                paths_list.append(path4)
+            else :
+                self.explore_path(paths_list, path4, -1, price_combination, user_index)
+            
+            return
+
+        # if we arrive at this point we know for sure that both secondary products can be seen
+        # in this case we have 3 new possible paths:
+        # 1) click on first secondary --> append secondo secondary to link and explore the new path
+        # 2) do NOT click on first secondary and click on second secondary
+        # 3) no clicks
+        
+        # 1)
+        path3 = self.Graph_path(path2.copy_info())
+        path3.probability *= q_1
+        path3.link.append(sec2_ind)
+        path3.link_prob.append(q_2)
+        self.explore_path(paths_list, path3, sec1_ind, price_combination, user_index)
+
+        # 2)
+        path4 = self.Graph_path(path2.copy_info())
+        path4.probability *= (1-q_1)*q_2
+        self.explore_path(paths_list, path4, sec2_ind, price_combination, user_index)
+
+        # 3)
+        path5 = self.Graph_path(path2.copy_info())
+        path5.probability *= (1-q_1)*(1-q_2)
+        # know we have 2 possible scenarios:    
+        # a) NO past second secondary to return to : path is closed
+        # b) past second secondary to explore : explore this path
+        if path5.link[-1] == -1 :
+            paths_list.append(path5)
+        else :
+            self.explore_path(paths_list, path5, -1, price_combination, user_index)
+                  
+        return
+
+    def product_reward_path(self, prod_index, user_index, price_combination) :
+
+        paths_list = []
+        self.explore_path(paths_list, None, prod_index, price_combination, user_index)
+        product_reward = 0. 
+        for path in paths_list:
+            product_reward += path.expected_return()
+
+        return product_reward
+
+    
+    def user_reward_path(self, user_index, price_combination) :
+        # initialize    reward and index i for the starting page
+        reward = 0.
+
+        for i in range(len(self.products)) :
+            alpha_i = self.alpha_ratios[user_index][i]
+            # product_reward compute the expected return starting from a specific product, so we have to multiply it 
+            # for the probability of starting from that product (alpha_i)
+            reward += alpha_i * self.product_reward_path(i, user_index, price_combination)
+        
+        return reward
+
+    def exp_reward_path(self, price_combination, conversion_rates = None, alpha_ratios = None, n_prod = None, graph_weights = None) :
+
+        """ Method that compute the expected reward related to the prices combination passed to the function.
+            If the only argument passed is the price combination the function returns the theoretical expected
+            reward.
+            The method can receive 4 optional arguments:
+                - conversion rate: list of matrices representig the probabilities to buy a product i at a price j for the user k
+                - alpha_ratios : list of lists of probabilities to land on product i at first for user j
+                - nprod : list of average number of product sold for a user
+                - graph_weights : list of matrices describing the probabilities of a click on a
+                    secondary product given that we have bought a primary product (a matrix for each user)
+            If at least one of the optional argument is passed, the function returns an expected reward different
+            from the theoretical one. In this case the output is the expected reward when argument passed are assumed
+            uncertain and we are guessing their true value (e.g. with a bandit algorithm) """
+        
+        # At first we have to deal with the argument passed and initialize the variable conversion_rate, alpha_ratios,
+        # n_prod_sold and graph_weights of the environment accordingly
+
+        # CONVERSION RATES
+        if conversion_rates == None:
+            # conversion rate is certain, so we consider the theoretical values given by the parameters chosen for
+            # the gamma distribution of each user
+            self.conversion_rates = copy.deepcopy(self.theoretical_values["conversion_rates"])
+        else :
+            # conversion rate are uncertain, so we consider the guess passed to the function
+            self.conversion_rates = conversion_rates
+
+        # ALPHA RATIOS
+        if alpha_ratios == None :
+            # alpha_ratios are assumed to be certain
+            self.alpha_ratios = copy.deepcopy(self.theoretical_values["alpha_ratios"])
+        
+        else :
+            # alpha_ratios uncertain, so we consider the guess passed to the function
+            self.alpha_ratios = alpha_ratios
+
+        # NUMBER OF PRODUCT SOLD
+        if n_prod == None :
+            # number of product sold is certain and we retrieve it bu theoretical values
+            self.n_prod_sold = copy.deepcopy(self.theoretical_values["n_prod_sold"])
+        else :
+            # number of product sold is uncertain, so we consider a guess of the mean value
+            self.n_prod_sold = n_prod
+
+        # GRAPH WEIGTHS
+        if graph_weights == None:
+            # Graph weights are considered certain, so we simply use the values stored in the user classes
+            self.graph_weights = copy.deepcopy(self.theoretical_values["graph_weights"])
+            
+        else :
+            self.graph_weights = graph_weights
+
+        # initialize final reward 
+        reward = 0.
+        
+        # if in the environment we have only 1 user we simply return the single_reward linked to the user
+        if len(self.users) == 1 :
+            reward = self.user_reward_path(0, price_combination)
+
+        else :
+            # if we have more than one user we have to weight the reward linked to the users with the 
+            # theoretical frequencies of the user categories (user_cat_prob)
+            for i in range(len(self.users)) :
+                user_reward = self.user_reward_path(i, price_combination)
+                reward += self.user_cat_prob[i] * user_reward
+            
+        return  reward
