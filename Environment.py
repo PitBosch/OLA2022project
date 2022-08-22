@@ -280,7 +280,7 @@ class Environment:
         return secondary_list
 
 
-    def expected_reward(self, price_combination, conversion_rates = None, alpha_ratios = None, n_prod = None, graph_weights = None):
+    def expected_reward111(self, price_combination, conversion_rates = None, alpha_ratios = None, n_prod = None, graph_weights = None):
         """ Method that compute the expected reward related to the prices combination passed to the function.
             If the only argument passed is the price combination the function returns the theoretical expected
             reward.
@@ -710,7 +710,7 @@ class Environment:
         
         return reward
 
-    def exp_reward_path(self, price_combination, conversion_rates = None, alpha_ratios = None, n_prod = None, graph_weights = None) :
+    def expected_reward(self, price_combination, conversion_rates = None, alpha_ratios = None, n_prod = None, graph_weights = None) :
 
         """ Method that compute the expected reward related to the prices combination passed to the function.
             If the only argument passed is the price combination the function returns the theoretical expected
