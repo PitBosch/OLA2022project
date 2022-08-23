@@ -2,7 +2,7 @@ from Environment import *
 
 class Greedy_optimizer: 
 
-    def __init__(self, env: Environment) -> None :
+    def __init__(self, env: Environment) :
         self.env = env
 
     def greedy_iteration(self, price_combination: list[int], actual_reward, conversion_rates = None,

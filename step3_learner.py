@@ -10,8 +10,6 @@ class TS_learner3(Learner):
         self.initial_beta.append(beta_parameters[0].copy())
         self.initial_beta.append(beta_parameters[1].copy())
         self.beta_parameters = []
-        
-        
 
     def sample_CR(self):
         # initialize the data structure to store sampled conversion rates
@@ -36,14 +34,17 @@ class TS_learner3(Learner):
             price_ind = price_combination[prod_ind]
             
             # update beta parameters with the following procedure:
-            if estimated_CR[prod_ind] > sampled_CR[prod_ind, price_ind] :
+            # if estimated_CR[prod_ind] > sampled_CR[prod_ind, price_ind] :
                 # in the simulation we have a conversion rate HIGHER than he sampled one
                 # ==> increase parameter a of the corresponding beta ditribution
-                self.beta_parameters[0][prod_ind, price_ind] += 1
-            else :
+              #  self.beta_parameters[0][prod_ind, price_ind] += 1
+            #else :
                 # in the simulation we have a conversion rate HIGHER than he sampled one
                 # ==> increase parameter b of the corresponding beta distribution
-                self.beta_parameters[1][prod_ind, price_ind] += 1
+              #  self.beta_parameters[1][prod_ind, price_ind] += 1
+
+            self.beta_parameters[0][prod_ind, price_ind] += estimated_CR[0, prod_ind]
+            self.beta_parameters[1][prod_ind, price_ind] += estimated_CR[1, prod_ind] - estimated_CR[0, prod_ind]
 
     def iteration(self, daily_users):
         """ Method to execute a single iteration of the Thompson Sampling Algorithm.
@@ -81,5 +82,3 @@ class TS_learner3(Learner):
             rewards.append(self.env.expected_reward(opt_price_com))
         
         self.reward_history.append(rewards)
-        
-    

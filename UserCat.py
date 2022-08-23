@@ -14,7 +14,7 @@ class UserCat:
         self.alphas = alphas
 
         # Proportions obtained by sampling at the start of each day
-        self.sampled_alphas = alphas
+        self.sampled_alphas = [x/sum(alphas) for x in alphas]
 
         # Economic availability parameters
         self.res_price_params = res_price_params

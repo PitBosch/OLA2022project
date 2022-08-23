@@ -78,7 +78,7 @@ class Environment:
             self.theoretical_values["graph_weights"].append(user.probabilities)
             self.graph_weights.append(user.probabilities.copy())
 
-    def user_profit(self, user : UserCat, price_combination, product_index, to_save_dict: dict):
+    def user_simulation(self, user : UserCat, price_combination, product_index, to_save_dict: dict):
         
         # retrieve the price of the product indicated by product_index for the current price_combination
         price_ind = price_combination[product_index]
@@ -100,17 +100,17 @@ class Environment:
 
         # User bought the object, so i sample how many products He bought and compute the margin on the sale
         n_prod_bought = user.get_prod_number()
-        profit = self.products[product_index].margins[price_ind] * n_prod_bought
+        # profit = self.products[product_index].margins[price_ind] * n_prod_bought
 
         # if the numbers of product sold are uncertain, update information retrieved from the simulation
         if "n_prod_sold" in to_save_dict.keys() :
             to_save_dict["n_prod_sold"][0][product_index] += n_prod_bought
             to_save_dict["n_prod_sold"][1][product_index] += 1
         
-        """The margin of the user is updated recursively every time he proceeds with a purchase, considering the margin of 
-           that product and the number of items bought by the user (random number)"""
+        #"""The margin of the user is updated recursively every time he proceeds with a purchase, considering the margin of 
+        #   that product and the number of items bought by the user (random number)"""
         
-        #GET THE PRODUCT FROM THE DICT -> POSSO FARLI DIVENTARE DEI METODI
+        # GET THE PRODUCT FROM THE DICT -> POSSO FARLI DIVENTARE DEI METODI
         first_secondary_index = self.Secondary_dict.get(self.products[product_index].name)[0]
         first_secondary = self.products[first_secondary_index]
         second_secondary_index = self.Secondary_dict.get(self.products[product_index].name)[1]
@@ -139,7 +139,7 @@ class Environment:
         # click sul primo e non l'ho ancora visitato
         if first_click :
             user.visited_products.append(first_secondary)  # add visited product to list
-            self.user_profit(user, price_combination, first_secondary.label, to_save_dict)
+            self.user_simulation(user, price_combination, first_secondary.label, to_save_dict)
         
         # the user clicks on the second secondary if it has never been shown before and with a probability
         # defined by user.probabilities
@@ -159,7 +159,7 @@ class Environment:
         #click sul secondo e non l'ho ancora visitato
         if second_click :
             user.visited_products.append(second_secondary)  # add visited product to list
-            self.user_profit(user, price_combination, second_secondary.label, to_save_dict)
+            self.user_simulation(user, price_combination, second_secondary.label, to_save_dict)
         
         return
 
@@ -180,7 +180,7 @@ class Environment:
         user.empty_visited_products()
         user.visited_products = [self.products[page_index]]
         
-        self.user_profit(user, price_combination, page_index, to_save_dict)
+        self.user_simulation(user, price_combination, page_index, to_save_dict)
         
         return
         
@@ -243,8 +243,8 @@ class Environment:
             to_save_dict = to_save_data[i]
             
             # if conversion rates are uncertain save the result obtained by the daily simulation
-            if "conversion_rates" in to_save :
-                to_save_dict["CR_vector"] = to_save_dict["CR_vector"][0]/(to_save_dict["CR_vector"][1]+0.01)
+            # if "conversion_rates" in to_save :
+                # to_save_dict["CR_vector"] = to_save_dict["CR_vector"][0]/(to_save_dict["CR_vector"][1]+0.01)
                 # +0.01 at denominator to avoid 0/0 division
 
             # if alpha ratios are uncertain save the result obtained by the daily simulation

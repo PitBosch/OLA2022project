@@ -1,16 +1,20 @@
-import Learner
-import Environment as env
-import UserCat as uc
-import Product as pr
+import pickle
+from Environment import Environment
+from UserCat import UserCat
+from Product import Product
+from Greedy_optimizer import *
 import numpy as np
-
+import matplotlib.pyplot as plt
+from step3_learner import TS_learner3
 
 #potrei creare le 3 categorie
 #EV=Esperti
 #IG=Inesperti Giovani
 #IV=Inesperti Vecchi LO mettiamo dopo per chiarezza ora voglio solo provare
 
-users=[]
+np.random.seed(1)
+
+users = []
 products=[]
 
 nameofproduct= [ #name of products
@@ -21,14 +25,14 @@ nameofproduct= [ #name of products
     "Amapola"
 ]
 
-prices=[[4., 5, 6 ,7],
-    [9., 10, 11, 12],
-    [18., 19, 20, 21],
-    [24., 25, 26, 27],
-    [33., 34, 35, 36]]
+prices=[[4., 6, 8, 10],
+    [8., 11, 14, 17],
+    [12., 16, 20, 24],
+    [20., 24, 28, 32],
+    [24., 28, 32, 36]]
 #1-2 di delta, Con sovrapposizione
 
-cost=[2,4.5,9,14,17]
+cost=[2, 4.5, 9, 14, 17]
 
 #sarebbe interessante anche prendere da file il tutto così da cambiare tutto più facilmente
 #calcolo i margini dai cost mi sembra più sensato e anche più veloce se dobbiamo cambiare continuamente
@@ -36,30 +40,37 @@ cost=[2,4.5,9,14,17]
 cost2 = np.tile(np.array([cost]).transpose(), (1, 4))
 margins = np.array(prices)-cost2
 
-Secondary_dict={            # Da rivedere, secondo me alcuni suggerimenti sono poco sensati
-    "Calabazas": [0,1],
-    "Hinojo": [4,3],
-    "Sesamo": [0,4],
-    "Girasol": [0,2],
-    "Amapola": [1,2]
+Secondary_dict={           # Propongo i prodotti più simili a quello mostrato --> problemino: 2 viene mostrato quasi sempre
+    "Calabazas": [1,2],
+    "Hinojo": [0,2],
+    "Sesamo": [1,3],
+    "Girasol": [2,4],
+    "Amapola": [2,3]
 }
 
-res_price_params={
-    "shape": 1,
-    "scale": 1,
+res_price_params = {
+    "shape": 5,  # media è shape*scale, la varianza è shape*scale^2
+    "scale": 5
 }
 
-probabilities = np.random.uniform(0.0,0.1,(5, 5))
 
-#matrix generata da una uniform / 5 because it is the number of product --> Andre: 0.1 come max non è un po' poco?
+probabilities = [[0, 0.3, 0.2, 0, 0],
+                 [0.3, 0, 0.3, 0, 0],
+                 [0, 0.2, 0, 0.4, 0],
+                 [0, 0, 0.2, 0, 0.4],
+                 [0, 0, 0.3, 0.3, 0]]
+probabilities = np.matrix(probabilities)
 
-alphas=[1/5,1/5,1/5,1/5,1/5] #TODO: cambiare a solo 5 valori
-#per ora li generiamo così, tutti uguali -> devo generare 3 diversi vettori alpha
 
-poisson_lambda = 1
+alphas=[10, 10, 10, 10, 10] 
+# per ora li generiamo così, tutti uguali -> devo generare 3 diversi vettori alpha
+
+poisson_lambda = 2
 #=valore atteso del numero di prodotti acquistati (specifico per prodotto)...non dipende dal
 #prodotto oltre che dallo user che dal tipo di user che
-p_users=[1/3,1/3,1/3] #probabilità di essere un tipo di utente-> da cambiare
+
+# p_users = [4/9, 3/9, 2/9] #probabilità di essere un tipo di utente-> da cambiare
+p_users = [1]
 
 lambda_q = 0.5 #just my idea of lambda
 #possiamo stimarlo con i dati passati provenienti dal sito -> vino tot è stato comprato 15 volte
@@ -69,27 +80,21 @@ lambda_q = 0.5 #just my idea of lambda
 #           a guardare secondo me dipende dall'utente e non dal prodotto
 
 for i in range (5):
-    products.append(pr.Product(prices[i], i, nameofproduct[i],margins[i]))
+    products.append(Product(prices[i], i, nameofproduct[i],margins[i]))
 
-for i in range(3):
-    users.append(uc.UserCat(alphas, res_price_params, poisson_lambda, probabilities))
+# for i in range(3):
+users.append(UserCat(alphas, res_price_params, poisson_lambda, probabilities))
 
-Env = env.Environment(users, products,  lambda_q, Secondary_dict,p_users)
-
-n_users=1000
-#supponiamo per il test che la combinazione dei prezzi non cambi mai
-
-price_comb=[0,1,2,1,3] #questa è la soluzione più semplice.
-
-#idealmente qui ci sarà un for dove simulo tutti i giorni e dove price_comb cambia a ogni giorno in base ai diversi algoritmi)
-
-Env.simulate_day(users_number = n_users, price_combination = price_comb) #also p_users will be discarded
-
-#for i in range(0,5): #questo perchè ho 5 prodotti
- #   pr.Product(prices[i], 1, "Calabazas", margins: [float])
+Env = Environment(users, products,  lambda_q, Secondary_dict, p_users)
 
 
-#dobbiamo generare due array user e product
+a = np.ones((5,4))
+b = np.ones((5,4))
+initial_beta = [a, b]
+learner = TS_learner3(initial_beta, Env)
 
+n_runs = 20
+daily_users = 100
+n_days = 50
 
-#n_arms dovrebbe essere 4 su 5 diversi MAB il reward è dato dalle
+learner.run(n_days, daily_users)
