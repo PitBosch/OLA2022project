@@ -47,27 +47,23 @@ class TS_learner3(Learner):
             self.beta_parameters[1][prod_ind, price_ind] += estimated_CR[1, prod_ind] - estimated_CR[0, prod_ind]
 
     def iteration(self, daily_users):
-        """ Method to execute a single iteration of the Thompson Sampling Algorithm.
-            Objective: choose the right price_combination to maximize expected reward """
+        """ Method to execute a single iteration of the Thompson Sampling Algorithm. Objective: choose the right price_combination
+        to maximize expected reward"""
 
         # 1) Sample from Beta distributions the estimated conversion rate
         sampled_CR = self.sample_CR()
-        
         # 2) Run the Greedy optimizer and select the best combination  
-        opt_prices_combination = self.Greedy_opt.run(conversion_rates = [sampled_CR])["combination"]
-
+        opt_prices_combination = self.Greedy_opt.run(conversion_rates=[sampled_CR])["combination"]
         # 3) Fixed the prices for the day simulate the daily user iterations
         estimated_CR = self.env.simulate_day(daily_users, opt_prices_combination, ["conversion_rates"])['CR_vector']
-
         # 4) Update Beta_parameters according to the simulation done
         self.update_parameters(sampled_CR, estimated_CR, opt_prices_combination)
-
         return opt_prices_combination
 
-    def run(self, n_round = 365, daily_users = 200) :
-        """ Method to run Thompson Sampling algorithm given number of days to be simulated and 
-            the number of users simulated in each day. It update the variable reward_history,
-            appendign the list of expected rewards obtained during the run. """
+
+    def run(self, n_round=365, daily_users=200):
+        """ Method to run Thompson Sampling algorithm given number of days to be simulated and the number of users simulated
+            in each day. It updates the variable reward_history, appending the list of expected rewards obtained during the run."""
 
         # Initialize an empty list to store the price_combination decided each day
         rewards = []
@@ -75,10 +71,8 @@ class TS_learner3(Learner):
         self.beta_parameters = []
         self.beta_parameters.append(self.initial_beta[0].copy())
         self.beta_parameters.append(self.initial_beta[1].copy())
-        
-        for i in range(n_round) :
-            # Do a single iteration of the TS andd store the price combination chosen in the iteration
+        for i in range(n_round):
+            # Do a single iteration of the TS, and store the price combination chosen in the iteration
             opt_price_com = self.iteration(daily_users)
             rewards.append(self.env.expected_reward(opt_price_com))
-        
         self.reward_history.append(rewards)

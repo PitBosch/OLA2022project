@@ -15,24 +15,23 @@ from step3_learner import TS_learner3
 np.random.seed(1)
 
 users = []
-products=[]
+products = []
 
-nameofproduct= [ #name of products
-    "Calabazas",
-    "Hinojo",
-    "Sesamo",
-    "Girasol",
-    "Amapola"
-]
+#name of products
+nameofproduct = ["Calabazas",
+                 "Hinojo",
+                 "Sesamo",
+                 "Girasol",
+                 "Amapola"]
 
-prices=[[4., 6, 8, 10],
-    [8., 11, 14, 17],
-    [12., 16, 20, 24],
-    [20., 24, 28, 32],
-    [24., 28, 32, 36]]
+prices = [[4., 6, 8, 10],
+          [8., 11, 14, 17],
+          [12., 16, 20, 24],
+          [20., 24, 28, 32],
+          [24., 28, 32, 36]]
 #1-2 di delta, Con sovrapposizione
 
-cost=[2, 4.5, 9, 14, 17]
+cost = [2, 4.5, 9, 14, 17]
 
 #sarebbe interessante anche prendere da file il tutto così da cambiare tutto più facilmente
 #calcolo i margini dai cost mi sembra più sensato e anche più veloce se dobbiamo cambiare continuamente
@@ -40,29 +39,26 @@ cost=[2, 4.5, 9, 14, 17]
 cost2 = np.tile(np.array([cost]).transpose(), (1, 4))
 margins = np.array(prices)-cost2
 
-Secondary_dict={           # Propongo i prodotti più simili a quello mostrato --> problemino: 2 viene mostrato quasi sempre
-    "Calabazas": [1,2],
-    "Hinojo": [0,2],
-    "Sesamo": [1,3],
-    "Girasol": [2,4],
-    "Amapola": [2,3]
-}
+Secondary_dict = {"Calabazas": [1, 4],
+                  "Hinojo": [2, 0],
+                  "Sesamo": [0, 3],
+                  "Girasol": [4, 1],
+                  "Amapola": [3, 2]}
 
-res_price_params = {
-    "shape": 5,  # media è shape*scale, la varianza è shape*scale^2
-    "scale": 5
-}
+# media è shape*scale, la varianza è shape*scale^2
+res_price_params = {"shape": 4,
+                    "scale": 2.5}
 
 
-probabilities = [[0, 0.3, 0.2, 0, 0],
-                 [0.3, 0, 0.3, 0, 0],
-                 [0, 0.2, 0, 0.4, 0],
-                 [0, 0, 0.2, 0, 0.4],
-                 [0, 0, 0.3, 0.3, 0]]
+probabilities = [[0, 1, 0, 0, 1],
+                 [1, 0, 1, 0, 0],
+                 [1, 0, 0, 1, 0],
+                 [0, 1, 0, 0, 1],
+                 [0, 0, 1, 1, 0]]
 probabilities = np.matrix(probabilities)
 
 
-alphas=[10, 10, 10, 10, 10] 
+alphas = [10, 10, 10, 10, 10]
 # per ora li generiamo così, tutti uguali -> devo generare 3 diversi vettori alpha
 
 poisson_lambda = 2
@@ -72,7 +68,7 @@ poisson_lambda = 2
 # p_users = [4/9, 3/9, 2/9] #probabilità di essere un tipo di utente-> da cambiare
 p_users = [1]
 
-lambda_q = 0.5 #just my idea of lambda
+lambda_q = 1
 #possiamo stimarlo con i dati passati provenienti dal sito -> vino tot è stato comprato 15 volte
 
 #proviamo a pensare, ha senso vederlo come coppia? categoria-prodotto? Avrei 3 categorie *5 prodotti-> 15 lambda diversi
@@ -88,8 +84,8 @@ users.append(UserCat(alphas, res_price_params, poisson_lambda, probabilities))
 Env = Environment(users, products,  lambda_q, Secondary_dict, p_users)
 
 
-a = np.ones((5,4))
-b = np.ones((5,4))
+a = np.ones((5, 4))
+b = np.ones((5, 4))
 initial_beta = [a, b]
 learner = TS_learner3(initial_beta, Env)
 
