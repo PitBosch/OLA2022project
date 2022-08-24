@@ -2,7 +2,7 @@ from Learner import *
 
 class TS_learner3(Learner):
 
-    def __init__(self, beta_parameters, env : Environment):
+    def __init__(self, beta_parameters, env : Environment, learning_rate = 1):
         # call initializer of super class
         super().__init__(env)
         # list of 2 matrices n_products x n_prices (5x4 in our case)
@@ -10,6 +10,7 @@ class TS_learner3(Learner):
         self.initial_beta.append(beta_parameters[0].copy())
         self.initial_beta.append(beta_parameters[1].copy())
         self.beta_parameters = []
+        self.lr = learning_rate
 
     def sample_CR(self):
         # initialize the data structure to store sampled conversion rates
@@ -43,8 +44,8 @@ class TS_learner3(Learner):
                 # ==> increase parameter b of the corresponding beta distribution
               #  self.beta_parameters[1][prod_ind, price_ind] += 1
 
-            self.beta_parameters[0][prod_ind, price_ind] += estimated_CR[0, prod_ind]
-            self.beta_parameters[1][prod_ind, price_ind] += estimated_CR[1, prod_ind] - estimated_CR[0, prod_ind]
+            self.beta_parameters[0][prod_ind, price_ind] += self.lr*(estimated_CR[0, prod_ind])
+            self.beta_parameters[1][prod_ind, price_ind] += self.lr*(estimated_CR[1, prod_ind] - estimated_CR[0, prod_ind])
 
     def iteration(self, daily_users):
         """ Method to execute a single iteration of the Thompson Sampling Algorithm. Objective: choose the right price_combination
