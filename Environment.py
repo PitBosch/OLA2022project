@@ -7,7 +7,7 @@ import copy
 class Environment:
     """Class containing all the parameters that characterize the problem, from the classes of users to the list of available products."""
 
-    def __init__(self, users: list[UserCat], products: list[Product], lambda_q, Secondary_dict, user_cat_prob):
+    def __init__(self, users: list[UserCat], products: list[Product], lambda_q, secondary_dict, user_cat_prob):
         # List of different categories of users considered. If len(users) == 1 --> AGGREGATED DEMAND         
         self.users = users
         # List of available products: each of them has available the information of its position in the list -> attribute label
@@ -15,7 +15,7 @@ class Environment:
         # lambda_q is the parameter that determines how much the second secondary is less probable to be clicked
         self.lambda_q = lambda_q
         # dictionary of lists of secondary products
-        self.Secondary_dict = Secondary_dict
+        self.secondary_dict = secondary_dict
         # relative frequency of the users category
         self.user_cat_prob = user_cat_prob # valutare se inserirlo come membro della classe userCat
         """ 4 parameters can be certain or uncertain in our simulations :
@@ -89,9 +89,9 @@ class Environment:
         #"""The margin of the user is updated recursively every time he proceeds with a purchase, considering the margin of 
         #   that product and the number of items bought by the user (random number)"""
         # GET THE PRODUCT FROM THE DICT -> POSSO FARLI DIVENTARE DEI METODI
-        first_secondary_index = self.Secondary_dict.get(self.products[product_index].name)[0]
+        first_secondary_index = self.secondary_dict.get(self.products[product_index].name)[0]
         first_secondary = self.products[first_secondary_index]
-        second_secondary_index = self.Secondary_dict.get(self.products[product_index].name)[1]
+        second_secondary_index = self.secondary_dict.get(self.products[product_index].name)[1]
         second_secondary = self.products[second_secondary_index]
         """To simulate the random behaviour of the user we sample from a random distribution and we use it to evaluate whether an event has occurred or not. """
         # the user clicks on the first secondary if it has never been shown before and with a probability
@@ -217,7 +217,7 @@ class Environment:
     def get_secondary(self, primary: Product):
         """ Support method to retrieve the secondary products associated to the primary product considered. The output is a list of 2 object
         of the class Product (i.e. the 2 secondary products)"""
-        secondary_indices = self.Secondary_dict[primary.name]
+        secondary_indices = self.secondary_dict[primary.name]
         secondary_list = [self.products[secondary_indices[0]], self.products[secondary_indices[1]]]
         return secondary_list
 
@@ -340,8 +340,8 @@ class Environment:
         path.primary_seen.append(primary_index)
         # retrieve secondary products indexes
         primary_name = self.products[primary_index].name
-        sec1_ind = self.Secondary_dict[primary_name][0]
-        sec2_ind = self.Secondary_dict[primary_name][1]
+        sec1_ind = self.secondary_dict[primary_name][0]
+        sec2_ind = self.secondary_dict[primary_name][1]
         # compute b_i, so the probability to buy the primary product considered
         b_i = self.conversion_rates[user_index][primary_index][price_combination[primary_index]]
         # compute expected margin

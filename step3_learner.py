@@ -77,3 +77,4 @@ class TS_learner3(Learner):
             opt_price_com = self.iteration(daily_users)
             rewards.append(self.env.expected_reward(opt_price_com))
         self.reward_history.append(rewards)
+        self.price_comb.append(opt_price_com)

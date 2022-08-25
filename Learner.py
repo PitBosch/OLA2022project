@@ -15,4 +15,6 @@ class Learner:
         self.opt_reward = env.optimal_reward()[0]
         # Initialize history of theoretical rewards 
         self.reward_history = []
+        # History of prices combination chosen
+        self.price_comb = []
 
