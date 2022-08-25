@@ -16,5 +16,5 @@ class Learner:
         # Initialize history of theoretical rewards 
         self.reward_history = []
         # History of prices combination chosen
-        self.price_comb = []
+        self.price_comb_history = []
 

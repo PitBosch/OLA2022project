@@ -68,13 +68,15 @@ class TS_learner3(Learner):
 
         # Initialize an empty list to store the price_combination decided each day
         rewards = []
+        price_comb = []
         # Set beta_parameters to initial values
         self.beta_parameters = []
         self.beta_parameters.append(self.initial_beta[0].copy())
         self.beta_parameters.append(self.initial_beta[1].copy())
         for i in range(n_round):
             # Do a single iteration of the TS, and store the price combination chosen in the iteration
-            opt_price_com = self.iteration(daily_users)
-            rewards.append(self.env.expected_reward(opt_price_com))
+            opt_price_comb = self.iteration(daily_users)
+            rewards.append(self.env.expected_reward(opt_price_comb))
+            price_comb.append(opt_price_comb)
         self.reward_history.append(rewards)
-        self.price_comb.append(opt_price_com)
+        self.price_comb_history.append(price_comb)
