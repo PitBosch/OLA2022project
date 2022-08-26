@@ -71,7 +71,10 @@ class Environment:
         # check if the primary product is bought
         primary_bought = user.buy(product_price)
         # if the conversion_rate are uncertain, update information retrieved from the simulation
-        if "CR_vector" in to_save_dict.keys():
+        # NOTICE: we update the conversion rates values only if we are on the FIRST product, to avoid
+        #         the overestimate of the conversion rates due to the reservation price mechanism
+        if "CR_vector" in to_save_dict.keys() and len(user.visited_products) == 1:
+        # if "CR_vector" in to_save_dict.keys() : <------------------------------------------------ OLD VERSION FOR CR_vector UPDATE
             # update number of times users has visualized the product 
             to_save_dict["CR_vector"][1][product_index] += 1
             if primary_bought:
