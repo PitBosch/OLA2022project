@@ -77,6 +77,7 @@ class Environment:
             if primary_bought:
                 # only if the product is bought the number of sales are increased
                 to_save_dict["CR_vector"][0][product_index] += 1
+        
         if not primary_bought:
             return
         # User bought the object, so i sample how many products He bought and compute the margin on the sale

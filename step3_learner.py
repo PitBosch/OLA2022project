@@ -10,6 +10,7 @@ class TS_learner3(Learner):
         self.initial_beta.append(beta_parameters[0].copy())
         self.initial_beta.append(beta_parameters[1].copy())
         self.beta_parameters = []
+        self.cr_matrix_list = []
         self.lr = learning_rate
 
     def sample_CR(self):
@@ -44,7 +45,7 @@ class TS_learner3(Learner):
                 # ==> increase parameter b of the corresponding beta distribution
               #  self.beta_parameters[1][prod_ind, price_ind] += 1
 
-            self.beta_parameters[0][prod_ind, price_ind] += self.lr*(estimated_CR[0, prod_ind])
+            self.beta_parameters[0][prod_ind, price_ind] += self.lr*(estimated_CR[0, prod_ind])*0.9
             self.beta_parameters[1][prod_ind, price_ind] += self.lr*(estimated_CR[1, prod_ind] - estimated_CR[0, prod_ind])
 
     def iteration(self, daily_users):
@@ -78,5 +79,11 @@ class TS_learner3(Learner):
             opt_price_comb = self.iteration(daily_users)
             rewards.append(self.env.expected_reward(opt_price_comb))
             price_comb.append(opt_price_comb)
+        # append the list of rewards obtained through the run
         self.reward_history.append(rewards)
+        # append the list of price combinations selected through the run
         self.price_comb_history.append(price_comb)
+        # compute and append the list of rewards obtained through the run
+        A = self.beta_parameters[0]
+        B = self.beta_parameters[1]
+        self.cr_matrix_list.append(A/(A+B))
