@@ -46,8 +46,13 @@ class Greedy_optimizer:
             updated = iter_result["updated"]
             optimal_reward = iter_result["expected_reward"]
         iter_result.pop("updated")
-        # iter_result["history"] = history
-        return iter_result
+        
+        return_dict = {
+            "expected_reward" : iter_result["expected_reward"],
+            "combination" : iter_result['combination']
+        }
+
+        return return_dict
 
         
 

@@ -9,7 +9,7 @@ class TS_learner3(Learner):
         self.initial_beta = []
         self.initial_beta.append(beta_parameters[0].copy())
         self.initial_beta.append(beta_parameters[1].copy())
-        self.beta_parameters = []
+        self.beta_parameters = self.initial_beta
         self.cr_matrix_list = []
         self.lr = learning_rate
 
@@ -27,7 +27,7 @@ class TS_learner3(Learner):
 
         return sampled_CR
 
-    def update_parameters(self, sampled_CR, estimated_CR, price_combination):
+    def update_parameters(self, estimated_CR, price_combination):
         """ Update beta parameters of arms selected (passed with price_combination) with respect 
             the results of the simulation """
 
@@ -45,7 +45,7 @@ class TS_learner3(Learner):
                 # ==> increase parameter b of the corresponding beta distribution
               #  self.beta_parameters[1][prod_ind, price_ind] += 1
 
-            self.beta_parameters[0][prod_ind, price_ind] += self.lr*(estimated_CR[0, prod_ind])*0.9
+            self.beta_parameters[0][prod_ind, price_ind] += self.lr*estimated_CR[0, prod_ind]
             self.beta_parameters[1][prod_ind, price_ind] += self.lr*(estimated_CR[1, prod_ind] - estimated_CR[0, prod_ind])
 
     def iteration(self, daily_users):
@@ -57,9 +57,10 @@ class TS_learner3(Learner):
         # 2) Run the Greedy optimizer and select the best combination  
         opt_prices_combination = self.Greedy_opt.run(conversion_rates=[sampled_CR])["combination"]
         # 3) Fixed the prices for the day simulate the daily user iterations
-        estimated_CR = self.env.simulate_day(daily_users, opt_prices_combination, ["conversion_rates"])['CR_vector']
+        estimated_CR = self.env.simulate_day(daily_users, opt_prices_combination, ["conversion_rates"])['CR_data']
         # 4) Update Beta_parameters according to the simulation done
-        self.update_parameters(sampled_CR, estimated_CR, opt_prices_combination)
+        self.update_parameters(estimated_CR, opt_prices_combination)
+        
         return opt_prices_combination
 
 

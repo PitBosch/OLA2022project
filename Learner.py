@@ -4,8 +4,6 @@ import numpy as np
 
 
 class Learner:
-
-
     def __init__(self, env : Environment):
         # Real environment
         self.env = env

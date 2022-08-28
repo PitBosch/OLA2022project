@@ -1,3 +1,4 @@
+from statistics import mean
 import numpy as np
 import pandas as pd
 import scipy.stats
@@ -16,17 +17,20 @@ class UserCat:
         self.sampled_alphas = [x/sum(alphas) for x in alphas]
         # Economic availability parameters
         self.res_price_params = res_price_params
-        self.res_price = 0.
+        self.res_price = [0. for i in range(5)]
         # Parameter of the distribution which defines the number of purchased self.products in case of buying
         self.poisson_lambda = poisson_lambda
         # Dataframe containing all the transition probabilities that self.links the different self.products for the user
         self.probabilities = probabilities
         self.visited_products = []
-        self.norm = scipy.stats.norm(loc=self.res_price_params['mean'], scale=self.res_price_params['std'])
+        self.res_price_distr = []
+        for i in range(5):
+            mean_i = self.res_price_params['mean'][i]
+            std_i = self.res_price_params['std'][i]
+            self.res_price_distr.append(scipy.stats.norm(loc = mean_i, scale = std_i))
 
-
-    def buy(self, price) -> bool:
-        return self.res_price > price
+    def buy(self, price, prod_ind) -> bool:
+        return self.res_price[prod_ind] > price
 
 
     def get_prod_number(self):
@@ -45,15 +49,15 @@ class UserCat:
 
 
     def sample_res_price(self):
-        # u = np.random.uniform()       CODE FOR TRUNCATED GAMMA --> DELETED
-        # G_Max = self.gamma.cdf(self.res_price_params['max'])
-        # G_Min = self.gamma.cdf(self.res_price_params['min'])
-        # self.res_price = self.gamma.ppf(u * (G_Max-G_Min) + G_Min)
-        self.res_price = self.norm.rvs(1)[0]
+        # u = np.random.uniform()   
+        # G_Min = 0
+        # self.res_price = self.gamma.ppf(u * (G_Max-G_Min) + G_Min)
+        for prod_ind in range(5):
+            self.res_price[prod_ind] = self.res_price_distr[prod_ind].rvs(1)[0]
 
 
-    def get_buy_prob(self, price):
-        return 1 - self.norm.cdf(price)
+    def get_buy_prob(self, price, prod_ind):
+        return 1 - self.res_price_distr[prod_ind].cdf(price)
 
 
     def empty_visited_products(self):

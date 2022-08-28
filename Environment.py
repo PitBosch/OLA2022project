@@ -7,10 +7,10 @@ import copy
 class Environment:
     """Class containing all the parameters that characterize the problem, from the classes of users to the list of available products."""
 
-    def __init__(self, users: list[UserCat], products: list[Product], lambda_q, secondary_dict, user_cat_prob):
+    def __init__(self, users: list[UserCat], products: list[Product], lambda_q, secondary_dict: dict[list[int]], user_cat_prob):
         # List of different categories of users considered. If len(users) == 1 --> AGGREGATED DEMAND         
         self.users = users
-        # List of available products: each of them has available the information of its position in the list -> attribute label
+        # List of available products: each of them has available the information of its position in the list -> attribute index
         self.products = products
         # lambda_q is the parameter that determines how much the second secondary is less probable to be clicked
         self.lambda_q = lambda_q
@@ -34,9 +34,11 @@ class Environment:
         for user in self.users:
             for product in self.products:
                 for price in product.prices:
-                    CR_list.append(user.get_buy_prob(price))
+                    prod_ind = product.index
+                    CR_list.append(user.get_buy_prob(price, prod_ind))
                 CR_matrix.append(CR_list.copy())
                 CR_list = []
+            CR_matrix = np.matrix(CR_matrix)
             self.theoretical_values['conversion_rates'].append(CR_matrix.copy())  # EXPECTED
             self.conversion_rates.append(CR_matrix.copy())
             CR_matrix = []
@@ -69,17 +71,17 @@ class Environment:
         price_ind = price_combination[product_index]
         product_price = self.products[product_index].prices[price_ind]
         # check if the primary product is bought
-        primary_bought = user.buy(product_price)
+        primary_bought = user.buy(product_price, product_index)
         # if the conversion_rate are uncertain, update information retrieved from the simulation
         # NOTICE: we update the conversion rates values only if we are on the FIRST product, to avoid
         #         the overestimate of the conversion rates due to the reservation price mechanism
-        if "CR_vector" in to_save_dict.keys() and len(user.visited_products) == 1:
-        # if "CR_vector" in to_save_dict.keys() : <------------------------------------------------ OLD VERSION FOR CR_vector UPDATE
+        if "CR_data" in to_save_dict.keys() and len(user.visited_products) == 1:
+        # if "CR_data" in to_save_dict.keys() : <------------------------------------------------ OLD VERSION FOR CR_data UPDATE
             # update number of times users has visualized the product 
-            to_save_dict["CR_vector"][1][product_index] += 1
+            to_save_dict["CR_data"][1][product_index] += 1
             if primary_bought:
                 # only if the product is bought the number of sales are increased
-                to_save_dict["CR_vector"][0][product_index] += 1
+                to_save_dict["CR_data"][0][product_index] += 1
         
         if not primary_bought:
             return
@@ -100,7 +102,7 @@ class Environment:
         """To simulate the random behaviour of the user we sample from a random distribution and we use it to evaluate whether an event has occurred or not. """
         # the user clicks on the first secondary if it has never been shown before and with a probability
         # defined by user.probabilities
-        first_click = (np.random.uniform() < user.probabilities[self.products[product_index].label, first_secondary.label]) and first_secondary not in user.visited_products
+        first_click = (np.random.uniform() < user.probabilities[self.products[product_index].index, first_secondary.index]) and first_secondary not in user.visited_products
         # if the graph weights are uncertain we update the information store in to_save_dict
         # with respect to the result of the simulation
         if "graph_weights" in to_save_dict.keys():
@@ -113,10 +115,10 @@ class Environment:
         # click sul primo e non l'ho ancora visitato
         if first_click:
             user.visited_products.append(first_secondary)  # add visited product to list
-            self.user_simulation(user, price_combination, first_secondary.label, to_save_dict)
+            self.user_simulation(user, price_combination, first_secondary.index, to_save_dict)
         # the user clicks on the second secondary if it has never been shown before and with a probability
         # defined by user.probabilities
-        second_click = np.random.uniform() < self.lambda_q * user.probabilities[self.products[product_index].label, second_secondary.label] and second_secondary not in user.visited_products
+        second_click = np.random.uniform() < self.lambda_q * user.probabilities[self.products[product_index].index, second_secondary.index] and second_secondary not in user.visited_products
         # if the graph weights are uncertain we update the information store in to_save_dict
         # with respect to the result of the simulation
         if "graph_weights" in to_save_dict.keys():
@@ -129,7 +131,7 @@ class Environment:
         #click sul secondo e non l'ho ancora visitato
         if second_click:
             user.visited_products.append(second_secondary)  # add visited product to list
-            self.user_simulation(user, price_combination, second_secondary.label, to_save_dict)
+            self.user_simulation(user, price_combination, second_secondary.index, to_save_dict)
         return
 
 
@@ -141,8 +143,8 @@ class Environment:
         # sample which is the first product showed to the user
         page_index = user.start_event()
         # if alpha ratios are uncertain count each time a product is open as first
-        if "alpha_ratios" in to_save_dict.keys():
-            to_save_dict["alpha_ratios"][page_index] += 1
+        if "initial_prod" in to_save_dict.keys():
+            to_save_dict["initial_prod"][page_index] += 1
         # svuoto i prodotti visitati
         user.empty_visited_products()
         user.visited_products = [self.products[page_index]]
@@ -150,7 +152,7 @@ class Environment:
         return
         
 
-    def simulate_day(self, daily_users, price_combination, to_save: list):
+    def simulate_day(self, daily_users, price_combination, to_save: list, aggregated = True):
         """Method which simulates the usage of our website into an entire working day. Each day the alphas of each class of users
            are updated according to a Dirichlet distribution, it takes as input number of users, user probability (that now will be
            inside user_cat and the price combination of today"""
@@ -164,9 +166,9 @@ class Environment:
         d = len(price_combination)
         to_save_dict = {}
         if "conversion_rates" in to_save:
-            to_save_dict["CR_vector"] = np.zeros((2, d))
+            to_save_dict["CR_data"] = np.zeros((2, d))
         if "alpha_ratios" in to_save:
-            to_save_dict["alpha_ratios"] = np.zeros(d)
+            to_save_dict["initial_prod"] = np.zeros(d)
         if "products_sold" in to_save:
             to_save_dict["n_prod_sold"] = np.zeros((2, d))
         if "graph_weights" in to_save:
@@ -193,28 +195,40 @@ class Environment:
             # we increment the daily profit of the website by the profit done with the simulated user
             self.execute(self.users[user_kind], price_combination, to_save_data[user_kind])
             # notice that we have passed only the dictionary for the specific user category sampled
-        for i in range(len(self.users)):
-            to_save_dict = to_save_data[i]
-            # if conversion rates are uncertain save the result obtained by the daily simulation
-            # if "conversion_rates" in to_save:
-                # to_save_dict["CR_vector"] = to_save_dict["CR_vector"][0]/(to_save_dict["CR_vector"][1]+0.01)
-                # +0.01 at denominator to avoid 0/0 division
+        
 
+        if aggregated :
+            # if data are aggregated return a single dictionary containing all needed informations
+            final_dict = {}
+            if "conversion_rates" in to_save:
+                final_dict["CR_data"] = np.sum([tsd["CR_data"] for tsd in to_save_data], axis = 0)
+            if "alpha_ratios" in to_save:
+                final_dict["initial_prod"] = np.sum([tsd["initial_prod"] for tsd in to_save_data], axis = 0)
+            if "products_sold" in to_save:
+                final_dict["n_prod_sold"] = np.sum([tsd["n_prod_sold"] for tsd in to_save_data], axis = 0)
+            if "graph_weights" in to_save:
+                final_dict["clicks"] = np.sum([tsd["clicks"] for tsd in to_save_data], axis = 0)
+                final_dict["visualizations"] = np.sum([tsd["visualizations"] for tsd in to_save_data], axis = 0)
+            to_save_data = [final_dict]
+        
+        for data_dict in to_save_data:
+            # if conversion rates are uncertain save the result obtained by the daily simulation
+            if "conversion_rates" in to_save:
+                data_dict["CR_vector"] = data_dict["CR_data"][0]/(data_dict["CR_data"][1]+1e-6)
+                # +1e-6 at denominator to avoid 0/0 division
             # if alpha ratios are uncertain save the result obtained by the daily simulation
             if "alpha_ratios" in to_save:
-                to_save_dict["alpha_ratios"] = to_save_dict["alpha_ratios"]/np.sum(to_save_dict["alpha_ratios"])
+                data_dict["alpha_ratios"] = data_dict["initial_prod"]/np.sum(data_dict["initial_prod"])
             # if number of product sold per product are uncertain save the result obtained by the daily simulation
             if "products_sold" in to_save:
-                to_save_dict["n_prod_sold"] = to_save_dict["n_prod_sold"][0]/(to_save_dict["n_prod_sold"][1]+0.01)
+                data_dict["mean_prod_sold"] = data_dict["n_prod_sold"][0]/(data_dict["n_prod_sold"][1]+1e-6)
             # if number of product sold per product are uncertain save the result obtained by the daily simulation
             if "graph_weights" in to_save:
-                to_save_dict["graph_weights"] = to_save_dict["clicks"]/(to_save_dict["visualizations"] + 0.01)
-                to_save_dict.pop("clicks")
-                to_save_dict.pop("visualizations")
-            # we store the daily profit (USELESS)
-            # to_save_dict["daily_profit"] = daily_profit/daily_users
-        if len(self.users) == 1:
+                data_dict["graph_weights"] = data_dict["clicks"]/(data_dict["visualizations"]+1e-6)
+
+        if len(to_save_data) == 1:
             to_save_data = to_save_data[0]
+        
         return to_save_data
 
 
@@ -224,31 +238,6 @@ class Environment:
         secondary_indices = self.secondary_dict[primary.name]
         secondary_list = [self.products[secondary_indices[0]], self.products[secondary_indices[1]]]
         return secondary_list
-
-    def optimal_reward(self, user_index=-1):
-        """ This method explores all the possible combination with a brute force approach to determine which is the price combination
-            that returns the highest expected reward. It returns both the optimal price combination and optimal expected reward"""
-        optimal_combination = [0, 0, 0, 0, 0]
-        reward_max = 0
-        reward = 0
-        # enumerate all possible combinations of prices (4^5, 1024)
-        possible_combinations = []
-        # pensare a un modo più intelligente
-        for i1 in range(4):
-            for i2 in range(4):
-                for i3 in range(4):
-                    for i4 in range(4):
-                        for i5 in range(4):
-                            possible_combinations.append([i1, i2, i3, i4, i5])
-        for price_combination in possible_combinations:
-            # compute the reward for the price combination considered
-            reward = self.expected_reward(price_combination)
-            # update if actual  reward is greater than best past  reward
-            if reward > reward_max:
-                reward_max = reward
-                optimal_combination = price_combination.copy()
-        return reward_max, optimal_combination
-
 
     class Graph_path:
 
@@ -347,7 +336,7 @@ class Environment:
         sec1_ind = self.secondary_dict[primary_name][0]
         sec2_ind = self.secondary_dict[primary_name][1]
         # compute b_i, so the probability to buy the primary product considered
-        b_i = self.conversion_rates[user_index][primary_index][price_combination[primary_index]]
+        b_i = self.conversion_rates[user_index][primary_index, price_combination[primary_index]]
         # compute expected margin
         margin = self.products[primary_index].get_daily_margin(price_combination[primary_index])
         exp_margin = margin * (self.n_prod_sold[user_index]) # margin * expected number of items bought, that is the poisson parameter
@@ -446,7 +435,7 @@ class Environment:
         return
 
 
-    def product_reward_path(self, prod_index, user_index, price_combination):
+    def product_reward(self, prod_index, user_index, price_combination):
         paths_list = []
         self.explore_path(paths_list, None, prod_index, price_combination, user_index)
         product_reward = 0. 
@@ -455,18 +444,18 @@ class Environment:
         return product_reward
 
 
-    def user_reward_path(self, user_index, price_combination):
+    def user_reward(self, user_index, price_combination):
         # initialize reward and index i for the starting page
         reward = 0.
         for i in range(len(self.products)):
             alpha_i = self.alpha_ratios[user_index][i]
             # product_reward compute the expected return starting from a specific product, so we have to multiply it 
             # for the probability of starting from that product (alpha_i)
-            reward += alpha_i * self.product_reward_path(i, user_index, price_combination)
+            reward += alpha_i * self.product_reward(i, user_index, price_combination)
         return reward
 
 
-    def expected_reward(self, price_combination, conversion_rates=None, alpha_ratios=None, n_prod=None, graph_weights=None):
+    def expected_reward(self, price_combination, conversion_rates=None, alpha_ratios=None, n_prod=None, graph_weights=None, user_index=None):
         """ Method that compute the expected reward related to the prices' combination passed to the function.
             If the only argument passed is the price combination the function returns the theoretical expected reward.
             The method can receive 4 optional arguments:
@@ -512,14 +501,44 @@ class Environment:
             self.graph_weights = graph_weights
         # initialize final reward 
         reward = 0.
+
         # if in the environment we have only 1 user we simply return the single_reward linked to the user
         if len(self.users) == 1:
-            reward = self.user_reward_path(0, price_combination)
+            reward = self.user_reward(0, price_combination)
         else:
-            # if we have more than one user we have to weight the reward linked to the users with the 
-            # theoretical frequencies of the user categories (user_cat_prob)
-            for i in range(len(self.users)):
-                user_reward = self.user_reward_path(i, price_combination)
-                reward += self.user_cat_prob[i] * user_reward
+            # The default value for user_index is None, representing the case of aggregated demand curve
+            if user_index is None:
+                # if we have more than one user we have to weight the reward linked to the users with the 
+                # theoretical frequencies of the user categories (user_cat_prob)
+                for i in range(len(self.users)):
+                    user_reward = self.user_reward(i, price_combination)
+                    reward += self.user_cat_prob[i] * user_reward
+            # Otherwise we return the expected reward for the specified user
+            else:
+                reward = self.user_reward(i, price_combination)
             
         return reward
+
+    def optimal_reward(self, user_index = None):
+            """ This method explores all the possible combination with a brute force approach to determine which is the price combination
+                that returns the highest expected reward. It returns both the optimal price combination and optimal expected reward"""
+            optimal_combination = [0, 0, 0, 0, 0]
+            reward_max = 0
+            reward = 0
+            # enumerate all possible combinations of prices (4^5, 1024)
+            possible_combinations = []
+            # pensare a un modo più intelligente
+            for i1 in range(4):
+                for i2 in range(4):
+                    for i3 in range(4):
+                        for i4 in range(4):
+                            for i5 in range(4):
+                                possible_combinations.append([i1, i2, i3, i4, i5])
+            for price_combination in possible_combinations:
+                # compute the reward for the price combination considered
+                reward = self.expected_reward(price_combination, user_index)
+                # update if actual  reward is greater than best past  reward
+                if reward > reward_max:
+                    reward_max = reward
+                    optimal_combination = price_combination.copy()
+            return reward_max, optimal_combination
