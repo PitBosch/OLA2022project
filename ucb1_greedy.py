@@ -1,10 +1,10 @@
 import numpy as np
-from learner2 import *
+from ucb_learner import *
 from Environment import *
 from Greedy_optimizer import *
 
 
-class ucb1_greedy(learner2):
+class ucb1_greedy(ucb_learner):
     def __init__(self, daily_users, n_products, n_arms, prices, env: Environment):
         super().__init__(n_products, n_arms)
         self.daily_users = daily_users

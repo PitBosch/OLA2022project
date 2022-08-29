@@ -1,4 +1,4 @@
-class learner2:
+class ucb_learner:
     def __init__(self, n_products, n_arms):
         self.t = 0
         self.n_products = n_products
