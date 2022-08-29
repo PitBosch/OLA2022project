@@ -516,7 +516,7 @@ class Environment:
                     reward += self.user_cat_prob[i] * user_reward
             # Otherwise we return the expected reward for the specified user
             else:
-                reward = self.user_reward(i, price_combination)
+                reward = self.user_reward(user_index, price_combination)
             
         return reward
 
