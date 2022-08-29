@@ -184,7 +184,8 @@ class Environment:
         for user in self.users:
             user.generate_alphas()
         # We simulate the interactions of "users_number" users
-        for i in range(daily_users):
+        n_users = np.random.poisson(lam = daily_users)
+        for i in range(n_users):
             # extract the category of the simulated user
             if len(self.users) == 1:
                 # if we have only a user we don't need to extract the category
