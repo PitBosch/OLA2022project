@@ -8,7 +8,7 @@ class UserCat:
 
 
     """Class containing all the parameters required to simulate the behaviour of a particular category in our website"""
-    def __init__(self, alphas: np.array, res_price_params: dict[str], poisson_lambda: float, probabilities: np.array, category="ciao"):
+    def __init__(self, alphas: np.array, res_price_params: dict[str], poisson_lambda: float, probabilities: np.array, category="aggregated"):
         # name of the user category
         self.category = category
         # Entry proportions between the different self.products (alpha_0: prob of visiting a competitor website)
