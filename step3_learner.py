@@ -1,8 +1,9 @@
 from Learner import *
 
+
 class TS_learner3(Learner):
 
-    def __init__(self, beta_parameters, env : Environment, learning_rate = 1):
+    def __init__(self, beta_parameters, env: Environment, learning_rate=1):
         # call initializer of super class
         super().__init__(env)
         # list of 2 matrices n_products x n_prices (5x4 in our case)
@@ -15,7 +16,7 @@ class TS_learner3(Learner):
 
     def sample_CR(self):
         # initialize the data structure to store sampled conversion rates
-        sampled_CR = np.zeros((5,4))
+        sampled_CR = np.zeros((5, 4))
 
         for prod_ind in range(5):
             for price_ind in range(4):
@@ -31,7 +32,7 @@ class TS_learner3(Learner):
         """ Update beta parameters of arms selected (passed with price_combination) with respect 
             the results of the simulation """
 
-        for prod_ind in range(5) :
+        for prod_ind in range(5):
             # retrieve the price index for the considered product 
             price_ind = price_combination[prod_ind]
             

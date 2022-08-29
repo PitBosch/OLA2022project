@@ -1,5 +1,6 @@
 from Environment import *
 
+
 class Greedy_optimizer: 
 
     def __init__(self, env: Environment):
@@ -48,8 +49,8 @@ class Greedy_optimizer:
         iter_result.pop("updated")
         
         return_dict = {
-            "expected_reward" : iter_result["expected_reward"],
-            "combination" : iter_result['combination']
+            "expected_reward": iter_result["expected_reward"],
+            "combination": iter_result['combination']
         }
 
         return return_dict

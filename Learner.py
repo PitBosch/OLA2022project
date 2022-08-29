@@ -4,7 +4,7 @@ import numpy as np
 
 
 class Learner:
-    def __init__(self, env : Environment):
+    def __init__(self, env: Environment):
         # Real environment
         self.env = env
         # Greedy optimizer to decide the price combination each day
@@ -15,4 +15,3 @@ class Learner:
         self.reward_history = []
         # History of prices combination chosen
         self.price_comb_history = []
-

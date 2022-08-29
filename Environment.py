@@ -152,7 +152,7 @@ class Environment:
         return
         
 
-    def simulate_day(self, daily_users, price_combination, to_save: list, aggregated = True):
+    def simulate_day(self, daily_users, price_combination, to_save: list, aggregated=True):
         """Method which simulates the usage of our website into an entire working day. Each day the alphas of each class of users
            are updated according to a Dirichlet distribution, it takes as input number of users, user probability (that now will be
            inside user_cat and the price combination of today"""
@@ -197,7 +197,7 @@ class Environment:
             # notice that we have passed only the dictionary for the specific user category sampled
         
 
-        if aggregated :
+        if aggregated:
             # if data are aggregated return a single dictionary containing all needed informations
             final_dict = {}
             if "conversion_rates" in to_save:
@@ -238,6 +238,7 @@ class Environment:
         secondary_indices = self.secondary_dict[primary.name]
         secondary_list = [self.products[secondary_indices[0]], self.products[secondary_indices[1]]]
         return secondary_list
+
 
     class Graph_path:
 
@@ -519,26 +520,27 @@ class Environment:
             
         return reward
 
-    def optimal_reward(self, user_index = None):
-            """ This method explores all the possible combination with a brute force approach to determine which is the price combination
-                that returns the highest expected reward. It returns both the optimal price combination and optimal expected reward"""
-            optimal_combination = [0, 0, 0, 0, 0]
-            reward_max = 0
-            reward = 0
-            # enumerate all possible combinations of prices (4^5, 1024)
-            possible_combinations = []
-            # pensare a un modo più intelligente
-            for i1 in range(4):
-                for i2 in range(4):
-                    for i3 in range(4):
-                        for i4 in range(4):
-                            for i5 in range(4):
-                                possible_combinations.append([i1, i2, i3, i4, i5])
-            for price_combination in possible_combinations:
-                # compute the reward for the price combination considered
-                reward = self.expected_reward(price_combination, user_index)
-                # update if actual  reward is greater than best past  reward
-                if reward > reward_max:
-                    reward_max = reward
-                    optimal_combination = price_combination.copy()
-            return reward_max, optimal_combination
+
+    def optimal_reward(self, user_index=None):
+        """This method explores all the possible combination with a brute force approach to determine which is the price combination
+            that returns the highest expected reward. It returns both the optimal price combination and optimal expected reward"""
+        optimal_combination = [0, 0, 0, 0, 0]
+        reward_max = 0
+        reward = 0
+        # enumerate all possible combinations of prices (4^5, 1024)
+        possible_combinations = []
+        # pensare a un modo più intelligente
+        for i1 in range(4):
+            for i2 in range(4):
+                for i3 in range(4):
+                    for i4 in range(4):
+                        for i5 in range(4):
+                            possible_combinations.append([i1, i2, i3, i4, i5])
+        for price_combination in possible_combinations:
+            # compute the reward for the price combination considered
+            reward = self.expected_reward(price_combination, user_index)
+            # update if actual  reward is greater than best past  reward
+            if reward > reward_max:
+                reward_max = reward
+                optimal_combination = price_combination.copy()
+        return reward_max, optimal_combination
