@@ -76,7 +76,7 @@ class Environment:
         # NOTICE: we update the conversion rates values only if we are on the FIRST product, to avoid
         #         the overestimate of the conversion rates due to the reservation price mechanism
         if "CR_data" in to_save_dict.keys() and len(user.visited_products) == 1:
-        # if "CR_data" in to_save_dict.keys() : <------------------------------------------------ OLD VERSION FOR CR_data UPDATE
+        #if "CR_data" in to_save_dict.keys(): # <------------------------------------------------ OLD VERSION FOR CR_data UPDATE
             # update number of times users has visualized the product 
             to_save_dict["CR_data"][1][product_index] += 1
             if primary_bought:
