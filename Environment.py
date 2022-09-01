@@ -3,17 +3,28 @@ from UserCat import *
 from Product import *
 import copy
 
+def lambda_correct(prob_matrix, sec_dict : dict, lambda_q):
+    """ Function to apply the correction on the graph weights values due the decided value of lambda_q.
+        In our setting for each product i the probability of click on second secondary j is given by the
+        product of value (i,j) of the defined probability matrix and lambda.
+        This function apply this correction to the user defined probability matrix describing the graph weights"""
+        
+    out_matrix = prob_matrix.copy()
+
+    for i in range(5):
+        j = list(sec_dict.values())[i][1]
+        out_matrix[i,j] *= lambda_q
+    
+    return out_matrix
 
 class Environment:
     """Class containing all the parameters that characterize the problem, from the classes of users to the list of available products."""
 
-    def __init__(self, users: list[UserCat], products: list[Product], lambda_q, secondary_dict: dict[list[int]], user_cat_prob):
+    def __init__(self, users: list[UserCat], products: list[Product],secondary_dict: dict[list[int]], user_cat_prob):
         # List of different categories of users considered. If len(users) == 1 --> AGGREGATED DEMAND         
         self.users = users
         # List of available products: each of them has available the information of its position in the list -> attribute index
         self.products = products
-        # lambda_q is the parameter that determines how much the second secondary is less probable to be clicked
-        self.lambda_q = lambda_q
         # dictionary of lists of secondary products
         self.secondary_dict = secondary_dict
         # relative frequency of the users category
@@ -56,8 +67,8 @@ class Environment:
         self.theoretical_values["n_prod_sold"] = []
         self.n_prod_sold = []
         for user in self.users:
-            self.theoretical_values["n_prod_sold"].append(user.poisson_lambda + 1) # EXPECTED
-            self.n_prod_sold.append(user.poisson_lambda + 1)
+            self.theoretical_values["n_prod_sold"].append(user.poisson_lambda+1) # EXPECTED
+            self.n_prod_sold.append(user.poisson_lambda+1)
         # GRAPH WEIGHTS
         self.theoretical_values["graph_weights"] = []
         self.graph_weights = []
@@ -75,8 +86,8 @@ class Environment:
         # if the conversion_rate are uncertain, update information retrieved from the simulation
         # NOTICE: we update the conversion rates values only if we are on the FIRST product, to avoid
         #         the overestimate of the conversion rates due to the reservation price mechanism
-        #if "CR_data" in to_save_dict.keys() and len(user.visited_products) == 1:
-        if "CR_data" in to_save_dict.keys(): # <------------------------------------------------ OLD VERSION FOR CR_data UPDATE
+        #if "CR_data" in to_save_dict.keys() and len(user.visited_products) == 1: # <-------------- FIRST PRODUCT ONLY VERSION FOR CR_data UPDATE
+        if "CR_data" in to_save_dict.keys(): # <--------------------------------------------------- "COMPLETE" VERSION FOR CR_data UPDATE
             # update number of times users has visualized the product 
             to_save_dict["CR_data"][1][product_index] += 1
             if primary_bought:
@@ -86,7 +97,7 @@ class Environment:
         if not primary_bought:
             return
         # User bought the object, so i sample how many products He bought and compute the margin on the sale
-        n_prod_bought = user.get_prod_number()
+        n_prod_bought = user.get_prod_number(product_index)
         # profit = self.products[product_index].margins[price_ind] * n_prod_bought
         # if the numbers of product sold are uncertain, update information retrieved from the simulation
         if "n_prod_sold" in to_save_dict.keys():
@@ -118,7 +129,7 @@ class Environment:
             self.user_simulation(user, price_combination, first_secondary.index, to_save_dict)
         # the user clicks on the second secondary if it has never been shown before and with a probability
         # defined by user.probabilities
-        second_click = np.random.uniform() < self.lambda_q * user.probabilities[self.products[product_index].index, second_secondary.index] and second_secondary not in user.visited_products
+        second_click = np.random.uniform() < user.probabilities[self.products[product_index].index, second_secondary.index] and second_secondary not in user.visited_products
         # if the graph weights are uncertain we update the information store in to_save_dict
         # with respect to the result of the simulation
         if "graph_weights" in to_save_dict.keys():
@@ -341,10 +352,10 @@ class Environment:
         b_i = self.conversion_rates[user_index][primary_index, price_combination[primary_index]]
         # compute expected margin
         margin = self.products[primary_index].get_daily_margin(price_combination[primary_index])
-        exp_margin = margin * (self.n_prod_sold[user_index]) # margin * expected number of items bought, that is the poisson parameter
+        exp_margin = margin * (self.n_prod_sold[user_index][primary_index]) # margin * expected number of items bought, that is the poisson parameter
         # compute probabilities to click on the secondary given that the primary is bought
         q_1 = self.graph_weights[user_index][primary_index, sec1_ind]
-        q_2 = self.graph_weights[user_index][primary_index, sec2_ind] * self.lambda_q
+        q_2 = self.graph_weights[user_index][primary_index, sec2_ind]
         ######################
         # PRIMARY NOT BOUGHT #
         ######################

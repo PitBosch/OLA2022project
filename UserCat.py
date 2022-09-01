@@ -8,7 +8,7 @@ class UserCat:
 
 
     """Class containing all the parameters required to simulate the behaviour of a particular category in our website"""
-    def __init__(self, alphas: np.array, res_price_params: dict[str], poisson_lambda: float, probabilities: np.array, category="aggregated"):
+    def __init__(self, alphas: np.array, res_price_params: dict[str], poisson_lambda: list[float], probabilities: np.array, category="aggregated"):
         # name of the user category
         self.category = category
         # Entry proportions between the different self.products (alpha_0: prob of visiting a competitor website)
@@ -19,7 +19,7 @@ class UserCat:
         self.res_price_params = res_price_params
         self.res_price = [0. for i in range(5)]
         # Parameter of the distribution which defines the number of purchased self.products in case of buying
-        self.poisson_lambda = poisson_lambda
+        self.poisson_lambda = np.array(poisson_lambda)
         # Dataframe containing all the transition probabilities that self.links the different self.products for the user
         self.probabilities = probabilities
         self.visited_products = []
@@ -33,8 +33,8 @@ class UserCat:
         return self.res_price[prod_ind] > price
 
 
-    def get_prod_number(self):
-        return np.random.poisson(self.poisson_lambda) + 1
+    def get_prod_number(self, prod_ind):
+        return np.random.poisson(self.poisson_lambda[prod_ind]) + 1
 
 
     def start_event(self):

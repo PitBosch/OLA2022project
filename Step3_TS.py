@@ -1,18 +1,20 @@
 from Learner import *
 
 
-class TS_learner3(Learner):
+class Step3_TS(Learner):
 
-    def __init__(self, beta_parameters, env: Environment, learning_rate=1):
+    def __init__(self, env: Environment, beta_parameters, learning_rate=1):
         # call initializer of super class
         super().__init__(env)
-        # list of 2 matrices n_products x n_prices (5x4 in our case)
+        # pass learning rate to the class
+        self.lr = learning_rate
+        # CONVERSION RATES :
+        # store informations about beta parameters and inizialize CR matrix to store estimate
         self.initial_beta = []
         self.initial_beta.append(beta_parameters[0].copy())
         self.initial_beta.append(beta_parameters[1].copy())
-        self.beta_parameters = self.initial_beta
+        self.beta_parameters = []
         self.cr_matrix_list = []
-        self.lr = learning_rate
 
     def sample_CR(self):
         # initialize the data structure to store sampled conversion rates
@@ -37,15 +39,8 @@ class TS_learner3(Learner):
             price_ind = price_combination[prod_ind]
             
             # update beta parameters with the following procedure:
-            # if estimated_CR[prod_ind] > sampled_CR[prod_ind, price_ind] :
-                # in the simulation we have a conversion rate HIGHER than he sampled one
-                # ==> increase parameter a of the corresponding beta ditribution
-              #  self.beta_parameters[0][prod_ind, price_ind] += 1
-            #else :
-                # in the simulation we have a conversion rate HIGHER than he sampled one
-                # ==> increase parameter b of the corresponding beta distribution
-              #  self.beta_parameters[1][prod_ind, price_ind] += 1
-
+            # a + number of purchase
+            # b + (number of time users saw product i - number of purchase)
             self.beta_parameters[0][prod_ind, price_ind] += self.lr*estimated_CR[0, prod_ind]
             self.beta_parameters[1][prod_ind, price_ind] += self.lr*(estimated_CR[1, prod_ind] - estimated_CR[0, prod_ind])
 
@@ -85,7 +80,7 @@ class TS_learner3(Learner):
         self.reward_history.append(rewards)
         # append the list of price combinations selected through the run
         self.price_comb_history.append(price_comb)
-        # compute and append the list of rewards obtained through the run
+        # compute and append the matrix of conversion rates estimate after the run
         A = self.beta_parameters[0]
         B = self.beta_parameters[1]
         self.cr_matrix_list.append(A/(A+B))
