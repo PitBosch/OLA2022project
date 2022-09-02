@@ -70,8 +70,8 @@ class Step4_TS(Learner):
             # update beta parameterswith the following procedure:
             # a + number of times product i was the initial product
             # b + number of times other products where the initial product
-            self.beta_param_alpha[0, prod_ind] += estimated_alpha[prod_ind]
-            self.beta_param_alpha[1, prod_ind] += np.sum(estimated_alpha) - estimated_alpha[prod_ind]
+            self.beta_param_alpha[0, prod_ind] += self.lr*estimated_alpha[prod_ind]
+            self.beta_param_alpha[1, prod_ind] += self.lr*(np.sum(estimated_alpha) - estimated_alpha[prod_ind])
 
     def iteration(self, daily_users):
         """ Method to execute a single iteration of the Thompson Sampling Algorithm. Objective: choose the right price_combination
