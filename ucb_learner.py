@@ -8,8 +8,10 @@ class ucb_learner:
         self.n_arms = n_arms
         self.pulled = []
         self.crs_sw = crs_sw
+        self.daily_users = []
 
-    def update(self, arms_pulled, cr_data):
+    def update(self, arms_pulled, cr_data, n_users):
+        self.daily_users.append(n_users)
         n_of_purchase_for_product = cr_data[0].astype(int)
         n_of_clicks_for_product = cr_data[1].astype(int)
         crs_estimation = np.divide(n_of_purchase_for_product, n_of_clicks_for_product)

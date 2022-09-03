@@ -6,8 +6,8 @@ from Greedy_optimizer import *
 
 
 class step4_ucb1(step3_ucb1):
-    def __init__(self, daily_users, n_products, n_arms, prices, env: Environment, crs_sw=np.inf, step4_only_sw=np.inf):
-        super().__init__(daily_users, n_products, n_arms, prices, env, crs_sw)
+    def __init__(self, n_products, n_arms, prices, env: Environment, crs_sw=np.inf, step4_only_sw=np.inf):
+        super().__init__(n_products, n_arms, prices, env, crs_sw)
         self.alphas_means = np.array([1/5, 1/5, 1/5, 1/5, 1/5])
         self.alphas = []
         self.n_products_sold_means = np.array([1, 1, 1, 1, 1])
@@ -19,8 +19,8 @@ class step4_ucb1(step3_ucb1):
         arms_pulled = self.greedy_opt.run(conversion_rates=sampled_cr, alphas_ratio=np.expand_dims(self.alphas_means, axis=0), n_prod=np.expand_dims(self.n_products_sold_means, axis=0))["combination"]
         return arms_pulled
 
-    def update(self, arms_pulled, cr_data, alpha_data, mean_prod_sold):
-        super().update(arms_pulled, cr_data)
+    def update(self, arms_pulled, cr_data, n_users, alpha_data, mean_prod_sold):
+        super().update(arms_pulled, cr_data, n_users)
         # updating history lists
         if len(self.alphas) < self.step4_only_sw:
             self.alphas.append(np.divide(alpha_data, np.sum(alpha_data)))

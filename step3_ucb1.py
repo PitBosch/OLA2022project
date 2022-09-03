@@ -5,9 +5,8 @@ from Greedy_optimizer import *
 
 
 class step3_ucb1(ucb_learner):
-    def __init__(self, daily_users, n_products, n_arms, prices, env: Environment, crs_sw=np.inf):
+    def __init__(self, n_products, n_arms, prices, env: Environment, crs_sw=np.inf):
         super().__init__(n_products, n_arms, crs_sw)
-        self.daily_users = daily_users
         self.means = np.zeros((n_products, n_arms))
         self.widths = np.ones((n_products, n_arms)) * np.inf
         self.prices = prices
@@ -18,8 +17,8 @@ class step3_ucb1(ucb_learner):
         arms_pulled = self.greedy_opt.run(conversion_rates=sampled_cr)["combination"]
         return arms_pulled
 
-    def update(self, arms_pulled, cr_data):
-        super().update(arms_pulled, cr_data)
+    def update(self, arms_pulled, cr_data, n_users):
+        super().update(arms_pulled, cr_data, n_users)
         for product_idx in range(self.n_products):
             # weighted mean (on the n°_of_collected_samples so far) for the arm pulled
             mask = np.array(self.pulled)[:, 0, product_idx] == arms_pulled[product_idx]
@@ -33,12 +32,8 @@ class step3_ucb1(ucb_learner):
             self.means[product_idx, arms_pulled[product_idx]] = product_x_arm_pulled_weighted_mean
         for product_idx in range(self.n_products):
             for arm_idx in range(self.n_arms):
-                # n = np.sum(np.array(self.pulled, dtype=np.int32)[:, 0, product_idx] == arm_idx)
-                # n = np.sum(np.multiply(np.array(self.pulled, dtype=np.int32)[:, 0, product_idx] == arm_idx, np.array(self.pulled, dtype=np.int32)[:, 1, product_idx]))
-                n = len(self.pulled) * np.sum(
-                    np.multiply(np.array(self.pulled, dtype=np.int32)[:, 0, product_idx] == arm_idx,
-                                np.array(self.pulled, dtype=np.int32)[:, 1, product_idx])) / (
-                            np.sum(np.array(self.pulled)[:, 1]) / 20)
+                # below: number of visualization for product x with arm x, divided by the estimated number of daily users
+                n = np.sum(np.multiply(np.array(self.pulled, dtype=np.int32)[:, 0, product_idx] == arm_idx, np.array(self.pulled, dtype=np.int32)[:, 1, product_idx]))/np.mean(self.daily_users)
                 if n > 0:
                     self.widths[product_idx, arm_idx] = np.sqrt(2 * np.log(self.t) / (n*(self.t - 1)))
                 else:

@@ -6,8 +6,8 @@ from Greedy_optimizer import *
 
 
 class step5_ucb1(step3_ucb1):
-    def __init__(self, daily_users, n_products, n_arms, prices, env: Environment, crs_sw=np.inf, step5_only_sw=np.inf):
-        super().__init__(daily_users, n_products, n_arms, prices, env, crs_sw)
+    def __init__(self, n_products, n_arms, prices, env: Environment, crs_sw=np.inf, step5_only_sw=np.inf):
+        super().__init__(n_products, n_arms, prices, env, crs_sw)
         self.graph_weights_means = np.ones((self.n_products, self.n_products))
         self.graph_data = []
         self.step5_only_sw = step5_only_sw
@@ -17,8 +17,8 @@ class step5_ucb1(step3_ucb1):
         arms_pulled = self.greedy_opt.run(conversion_rates=sampled_cr, graph_weights=np.expand_dims(self.graph_weights_means, axis=0))["combination"]
         return arms_pulled
 
-    def update(self, arms_pulled, cr_data, visualizations, clicks):
-        super().update(arms_pulled, cr_data)
+    def update(self, arms_pulled, cr_data, n_users, visualizations, clicks):
+        super().update(arms_pulled, cr_data, n_users)
         graph_weights_mean = np.divide(clicks, np.maximum(visualizations, 1))
         if len(self.graph_data) < self.step5_only_sw:
             self.graph_data.append([graph_weights_mean.tolist(), visualizations.tolist()])
