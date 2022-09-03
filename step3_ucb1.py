@@ -21,7 +21,7 @@ class step3_ucb1(ucb_learner):
     def update(self, arms_pulled, cr_data):
         super().update(arms_pulled, cr_data)
         for product_idx in range(self.n_products):
-            #
+            # weighted mean (on the n°_of_collected_samples so far) for the arm pulled
             mask = np.array(self.pulled)[:, 0, product_idx] == arms_pulled[product_idx]
             n_clicks = np.array(self.pulled)[:, 1, product_idx]
             n_conv = np.array(self.pulled)[:, 2, product_idx]
@@ -33,11 +33,13 @@ class step3_ucb1(ucb_learner):
             self.means[product_idx, arms_pulled[product_idx]] = product_x_arm_pulled_weighted_mean
         for product_idx in range(self.n_products):
             for arm_idx in range(self.n_arms):
-                if len(self.pulled) <= self.crs_sw:
-                    n = np.sum(np.multiply(np.array(self.pulled, dtype=np.int32)[:, 0, product_idx] == arm_idx, np.array(self.pulled, dtype=np.int32)[:, 1, product_idx]))
-                else:
-                    n = np.sum(np.multiply(np.array(self.pulled[-self.crs_sw:], dtype=np.int32)[:, 0, product_idx] == arm_idx, np.array(self.pulled[-self.crs_sw:], dtype=np.int32)[:, 1, product_idx]))
+                # n = np.sum(np.array(self.pulled, dtype=np.int32)[:, 0, product_idx] == arm_idx)
+                # n = np.sum(np.multiply(np.array(self.pulled, dtype=np.int32)[:, 0, product_idx] == arm_idx, np.array(self.pulled, dtype=np.int32)[:, 1, product_idx]))
+                n = len(self.pulled) * np.sum(
+                    np.multiply(np.array(self.pulled, dtype=np.int32)[:, 0, product_idx] == arm_idx,
+                                np.array(self.pulled, dtype=np.int32)[:, 1, product_idx])) / (
+                            np.sum(np.array(self.pulled)[:, 1]) / 20)
                 if n > 0:
-                    self.widths[product_idx, arm_idx] = np.sqrt(2 * np.log(self.t) / n)
+                    self.widths[product_idx, arm_idx] = np.sqrt(2 * np.log(self.t) / (n*(self.t - 1)))
                 else:
                     self.widths[product_idx, arm_idx] = np.inf
