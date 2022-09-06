@@ -1,7 +1,7 @@
 from Environment import Environment
 from Greedy_optimizer import Greedy_optimizer
 import numpy as np
-
+import copy
 
 class Learner:
     def __init__(self, env: Environment):

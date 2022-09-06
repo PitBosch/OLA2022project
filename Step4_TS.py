@@ -3,7 +3,7 @@ from Learner import *
 
 class Step4_TS(Learner):
 
-    def __init__(self, env: Environment, beta_CR, beta_alpha, learning_rate=1):
+    def __init__(self, env: Environment, beta_CR, beta_alpha, n_prod_data, learning_rate=1.):
         # call initializer of super class
         super().__init__(env)
         # pass learning rate to the class
@@ -17,9 +17,17 @@ class Step4_TS(Learner):
         self.cr_matrix_list = []
         # ALPHA RATIOS :
         # # store informations about beta parameters and inizialize alpha est to store estimate after a complete run
-        self.initial_beta_alpha = beta_alpha.copy()             # Note beta_alpha is a 2*5 matrix (2 parameters, 5 products)
+        self.initial_beta_alpha = beta_alpha.copy()             # Note beta_alpha is a 2x5 matrix (2 parameters, 5 products)
         self.beta_param_alpha = self.initial_beta_alpha.copy()  
         self.alpha_ratios_list = []
+        # N PRODUCT SOLD
+        # n_prod_data is a 2x5 matrix:
+        # first row --> number of product sold for a specific product in the simulations
+        # second row --> number of times user bought a specific product (for each product obviously)
+        self.initial_n_prod_data = n_prod_data
+        self.n_prod_data = n_prod_data.copy()
+        self.mean_prod_sold = n_prod_data[0]/n_prod_data[1]
+        self.n_prod_list = []
 
     def sample_CR(self):
         # initialize the data structure to store sampled conversion rates
@@ -56,6 +64,7 @@ class Step4_TS(Learner):
         
         estimated_CR = simul_result['CR_data']
         estimated_alpha = simul_result['initial_prod']
+        estimated_n_prod_data = simul_result['n_prod_sold']
 
         for prod_ind in range(5):
             # retrieve the price index for the considered product 
@@ -67,11 +76,16 @@ class Step4_TS(Learner):
             self.beta_param_CR[0][prod_ind, price_ind] += self.lr*estimated_CR[0, prod_ind]
             self.beta_param_CR[1][prod_ind, price_ind] += self.lr*(estimated_CR[1, prod_ind] - estimated_CR[0, prod_ind])
             # ALPHA RATIOS
-            # update beta parameterswith the following procedure:
+            # update beta parameters with the following procedure:
             # a + number of times product i was the initial product
             # b + number of times other products where the initial product
             self.beta_param_alpha[0, prod_ind] += self.lr*estimated_alpha[prod_ind]
             self.beta_param_alpha[1, prod_ind] += self.lr*(np.sum(estimated_alpha) - estimated_alpha[prod_ind])
+            # N PROD SOLD
+            # simply update the collected data on past purchases adding informations of the daily simulation and
+            # compute the mean of the number of products sold for each product
+            self.n_prod_data += estimated_n_prod_data
+            self.mean_prod_sold = self.n_prod_data[0]/self.n_prod_data[1]
 
     def iteration(self, daily_users):
         """ Method to execute a single iteration of the Thompson Sampling Algorithm. Objective: choose the right price_combination
@@ -81,9 +95,9 @@ class Step4_TS(Learner):
         sampled_CR = self.sample_CR()
         sampled_alpha = self.sample_alpha()
         # 2) Run the Greedy optimizer and select the best combination  
-        opt_prices_combination = self.Greedy_opt.run(conversion_rates=[sampled_CR], alphas_ratio=[sampled_alpha])["combination"]
+        opt_prices_combination = self.Greedy_opt.run(conversion_rates=[sampled_CR], alphas_ratio=[sampled_alpha], n_prod=[self.mean_prod_sold])["combination"]
         # 3) Fixed the prices for the day simulate the daily user iterations
-        simulation_result = self.env.simulate_day(daily_users, opt_prices_combination, ["conversion_rates", "alpha_ratios"])
+        simulation_result = self.env.simulate_day(daily_users, opt_prices_combination, ["conversion_rates", "alpha_ratios", "products_sold"])
         # 4) Update Beta_parameters according to the simulation done
         self.update_parameters(simulation_result, opt_prices_combination)
         
@@ -102,6 +116,9 @@ class Step4_TS(Learner):
         self.beta_param_CR.append(self.initial_beta_CR[0].copy())
         self.beta_param_CR.append(self.initial_beta_CR[1].copy())
         self.beta_param_alpha = self.initial_beta_alpha.copy()
+        # Set data to estimate number of product sold to initial data
+        self.n_prod_data = self.initial_n_prod_data.copy()
+        self.mean_prod_sold = self.n_prod_data[0]/self.n_prod_data[1]
 
         for i in range(n_round):
             # Do a single iteration of the TS, and store the price combination chosen in the iteration
@@ -120,3 +137,5 @@ class Step4_TS(Learner):
         a_alpha = self.beta_param_alpha[0,:]
         b_alpha = self.beta_param_alpha[1,:]
         self.alpha_ratios_list.append(a_alpha/(a_alpha+b_alpha))
+        # compute and append estimate of number of product sold for each product
+        self.n_prod_list.append(self.mean_prod_sold.copy())

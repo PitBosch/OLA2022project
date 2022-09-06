@@ -467,7 +467,6 @@ class Environment:
             reward += alpha_i * self.product_reward(i, user_index, price_combination)
         return reward
 
-
     def expected_reward(self, price_combination, conversion_rates=None, alpha_ratios=None, n_prod=None, graph_weights=None, user_index=None):
         """ Method that compute the expected reward related to the prices' combination passed to the function.
             If the only argument passed is the price combination the function returns the theoretical expected reward.

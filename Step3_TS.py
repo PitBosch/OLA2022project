@@ -3,7 +3,7 @@ from Learner import *
 
 class Step3_TS(Learner):
 
-    def __init__(self, env: Environment, beta_parameters, learning_rate=1):
+    def __init__(self, env: Environment, beta_parameters, learning_rate=1.):
         # call initializer of super class
         super().__init__(env)
         # pass learning rate to the class
