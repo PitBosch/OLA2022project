@@ -6,7 +6,6 @@ import scipy.stats
 
 class UserCat:
 
-
     """Class containing all the parameters required to simulate the behaviour of a particular category in our website"""
     def __init__(self, alphas: np.array, res_price_params: dict[str], poisson_lambda: list[float], probabilities: np.array, category="aggregated"):
         # name of the user category
@@ -23,6 +22,10 @@ class UserCat:
         # Dataframe containing all the transition probabilities that self.links the different self.products for the user
         self.probabilities = probabilities
         self.visited_products = []
+        self.res_price_distr = []
+        self.set_res_price_distr()
+    
+    def set_res_price_distr(self):
         self.res_price_distr = []
         for i in range(5):
             mean_i = self.res_price_params['mean'][i]

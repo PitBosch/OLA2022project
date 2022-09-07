@@ -649,6 +649,7 @@ class Environment:
         return reward
 
     def optimal_reward(self, user_index=None):
+
         """This method explores all the possible combination with a brute force approach to determine which is the price combination
             that returns the highest expected reward. It returns both the optimal price combination and optimal expected reward"""
         optimal_combination = [0, 0, 0, 0, 0]
@@ -671,3 +672,49 @@ class Environment:
                 reward_max = reward
                 optimal_combination = price_combination.copy()
         return reward_max, optimal_combination
+
+    def abrupt_change_random(self, mean_sigma, std_lambda):
+        """ Method to call a ranodm abrupt change in the demand curve for each user. The abrupt change is modeled with the 
+            following criterion:
+            1) Sample from a gaussian with specified standard deviation the variation to be applied to the mean; Sample
+                a random value between (std/lambda, lambda*std) for the new standard deviation of reservation price
+            2) Modify the reservation price parameters in the user accordingly
+            3) Set reservation price distributions in user class for the new parameters"""
+        for i, user in enumerate(self.users):
+            for i in range(5):
+                mean_variation = np.random.randn()*mean_sigma
+                user.res_price_params['mean'][i] += mean_variation
+                old_std = user.res_price_params['std'][i]
+                new_std = old_std/std_lambda + np.random.rand()*(old_std*std_lambda - old_std/std_lambda)
+                user.res_price_params['std'][i] = new_std
+            user.set_res_price_distr()
+            # update the theoretical_values for the coversion rates
+            CR_matrix = []
+            CR_list = []
+            for product in self.products:
+                for price in product.prices:
+                    prod_ind = product.index
+                    CR_list.append(user.get_buy_prob(price, prod_ind))
+                CR_matrix.append(CR_list.copy())
+                CR_list = []
+            CR_matrix = np.matrix(CR_matrix)
+            self.theoretical_values['conversion_rates'][i] = CR_matrix.copy()
+            CR_matrix = []
+    
+    def abrupt_change_deterministic(self, new_res_price_param):
+        for i in range(len(self.users)):
+            # Change the reservation prices' parameters
+            self.users[i].res_price_params = new_res_price_param[i].copy()
+            self.users[i].set_res_price_distr()
+            # update the theoretical_values for the coversion rates
+            CR_matrix = []
+            CR_list = []
+            for product in self.products:
+                for price in product.prices:
+                    prod_ind = product.index
+                    CR_list.append(self.users[i].get_buy_prob(price, prod_ind))
+                CR_matrix.append(CR_list.copy())
+                CR_list = []
+            CR_matrix = np.matrix(CR_matrix)
+            self.theoretical_values['conversion_rates'][i] = CR_matrix.copy()
+            CR_matrix = []
