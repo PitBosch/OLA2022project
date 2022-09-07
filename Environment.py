@@ -17,18 +17,50 @@ def lambda_correct(prob_matrix, sec_dict : dict, lambda_q):
     
     return out_matrix
 
+def feature_matrix_to_list(feat_mat):
+    feature_list = []
+    n_groups = int(np.max(feat_mat)) + 1
+
+    for group in range(n_groups):
+        group_list = list(np.where(feat_mat == group))
+        group_list = [list(x) for x in group_list]
+        feature_list.append(group_list)
+
+    return feature_list
+
+def generate_users_prob(feat_matrix, feat_prob):
+    feat_list = feature_matrix_to_list(feat_matrix)
+    prob_list = []
+    n_groups = np.max(feat_matrix)+1
+    if n_groups == 1:
+        prob_list.append(1)
+    else:
+        for user_feat in feat_list:
+            prob = 0.
+            for feat_comb in user_feat:
+                p1 = feat_prob[0] if feat_comb[0] == 1 else 1-feat_prob[0]
+                p2 = feat_prob[1] if feat_comb[1] == 1 else 1-feat_prob[1]
+                prob += p1*p2
+            prob_list.append(prob)
+    
+    return prob_list
+
 class Environment:
     """Class containing all the parameters that characterize the problem, from the classes of users to the list of available products."""
 
-    def __init__(self, users: list[UserCat], products: list[Product],secondary_dict: dict[list[int]], user_cat_prob):
+    def __init__(self, users: list[UserCat], products: list[Product],secondary_dict: dict[list[int]], feat_matrix, feat_prob):
         # List of different categories of users considered. If len(users) == 1 --> AGGREGATED DEMAND         
         self.users = users
         # List of available products: each of them has available the information of its position in the list -> attribute index
         self.products = products
         # dictionary of lists of secondary products
         self.secondary_dict = secondary_dict
+        # matrix defining the partition based on the users features
+        self.feature_matrix = feat_matrix
+        # List of probability to have feature_i = 1
+        self.feature_prob = feat_prob
         # relative frequency of the users category
-        self.user_cat_prob = user_cat_prob # valutare se inserirlo come membro della classe userCat
+        self.user_cat_prob = generate_users_prob(feat_matrix, feat_prob)
         """ 4 parameters can be certain or uncertain in our simulations :
             - conversion rate: list of matrices representing the probabilities to buy a product i at a price j for the user k
             - alpha_ratios : list of lists of probabilities to land on product i at first for user j
@@ -162,8 +194,77 @@ class Environment:
         self.user_simulation(user, price_combination, page_index, to_save_dict)
         return
         
-
-    def simulate_day(self, daily_users, price_combination, to_save: list, aggregated=True):
+    def simulate_day_context(self, daily_users, price_combination_list, context_matrix, to_save: list):
+        """Method which simulates the usage of our website into an entire working day. Each day the alphas of each class of users
+           are updated according to a Dirichlet distribution, it takes as input number of users, user probability (that now will be
+           inside user_cat and the price combination of today"""
+        # We may need to return also approximation for:
+        #   - conversion rates
+        #   - alpha_ratios
+        #   - number of products sold
+        #   - graph weights
+        # In fact, when one of these variable is uncertain we need its approximation from the simulation
+        # For this reason we need to create some structure to store these values
+        n_groups = len(price_combination_list)
+        to_save_dict = {}
+        to_save_dict['n_users'] = 0
+        if "conversion_rates" in to_save:
+            to_save_dict["CR_data"] = np.zeros((2, d))
+        if "alpha_ratios" in to_save:
+            to_save_dict["initial_prod"] = np.zeros(d)
+        if "products_sold" in to_save:
+            to_save_dict["n_prod_sold"] = np.zeros((2, d))
+        if "graph_weights" in to_save:
+            to_save_dict["graph_weights"] = np.zeros((d, d))
+            to_save_dict["visualizations"] = np.zeros((d, d))
+            to_save_dict["clicks"] = np.zeros((d, d))
+        # We save data 
+        to_save_data = {
+            '00' : copy.deepcopy(to_save_dict),
+            '01' : copy.deepcopy(to_save_dict),
+            '10' : copy.deepcopy(to_save_dict),
+            '11' : copy.deepcopy(to_save_dict)
+        }
+        # Generate daily alpha ratios for each user category for the new day
+        for user in self.users:
+            user.generate_alphas()
+        # We simulate the interactions of "users_number" users
+        n_users = np.random.poisson(lam = daily_users)
+        for i in range(n_users):
+            # FEATURE 1 SAMPLE
+            feat1 = np.random.binomial(1, self.feature_prob[0])
+            # FEATURE 2 SAMPLE
+            feat2 = np.random.binomial(1, self.feature_prob[0])
+            # Retrieve right key to access to_sava_data according to features sampled
+            feat_key = str(feat1)+str(feat2)
+            # Increase number of users appeared for the couple of features
+            to_save_data[feat_key][n_users] += 1
+            # user category
+            feat_ind = [int(feat1), int(feat2)]
+            user_ind = self.feature_matrix[feat_ind]
+            comb_ind = context_matrix[feat_ind]
+            # we increment the daily profit of the website by the profit done with the simulated user
+            self.execute(self.users[user_ind], price_combination_list[comb_ind], to_save_data[feat_key])
+            # notice that we have passed only the dictionary for the specific user category sampled
+        
+        for data_dict in to_save_data:
+            # if conversion rates are uncertain save the result obtained by the daily simulation
+            if "conversion_rates" in to_save:
+                data_dict["CR_vector"] = data_dict["CR_data"][0]/(data_dict["CR_data"][1]+1e-6)
+                # +1e-6 at denominator to avoid 0/0 division
+            # if alpha ratios are uncertain save the result obtained by the daily simulation
+            if "alpha_ratios" in to_save:
+                data_dict["alpha_ratios"] = data_dict["initial_prod"]/np.sum(data_dict["initial_prod"])
+            # if number of product sold per product are uncertain save the result obtained by the daily simulation
+            if "products_sold" in to_save:
+                data_dict["mean_prod_sold"] = data_dict["n_prod_sold"][0]/(data_dict["n_prod_sold"][1]+1e-6)
+            # if number of product sold per product are uncertain save the result obtained by the daily simulation
+            if "graph_weights" in to_save:
+                data_dict["graph_weights"] = data_dict["clicks"]/(data_dict["visualizations"]+1e-6)
+        
+        return to_save_data
+    
+    def simulate_day(self, daily_users, price_combination, to_save: list, aggregated = True):
         """Method which simulates the usage of our website into an entire working day. Each day the alphas of each class of users
            are updated according to a Dirichlet distribution, it takes as input number of users, user probability (that now will be
            inside user_cat and the price combination of today"""
@@ -242,7 +343,6 @@ class Environment:
             to_save_data = to_save_data[0]
         
         return to_save_data
-
 
     def get_secondary(self, primary: Product):
         """ Support method to retrieve the secondary products associated to the primary product considered. The output is a list of 2 object
