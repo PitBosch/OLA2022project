@@ -9,9 +9,12 @@ class step4_ucb1(step3_ucb1):
     def __init__(self, n_products, n_arms, prices, env: Environment, crs_sw=np.inf, step4_only_sw=np.inf):
         super().__init__(n_products, n_arms, prices, env, crs_sw)
         self.alphas_means = np.array([1/5, 1/5, 1/5, 1/5, 1/5])
+        # history of alphas: contains all the alpha ratios parameters estimated each day
         self.alphas = []
         self.n_products_sold_means = np.array([1, 1, 1, 1, 1])
+        # history of n° items sold; contains the n° of items sold each day
         self.n_products_sold_means_history = []
+        # sliding window applied on alpha ratios and n° items sold estimations
         self.step4_only_sw = step4_only_sw
 
     def pull_arms(self):
@@ -26,8 +29,8 @@ class step4_ucb1(step3_ucb1):
             self.alphas.append(np.divide(alpha_data, np.sum(alpha_data)))
             self.n_products_sold_means_history.append(mean_prod_sold)
         else:
-            self.alphas.pop(0)
-            self.n_products_sold_means_history.pop(0)
+            self.alphas.pop(0) # delete the first element
+            self.n_products_sold_means_history.pop(0) # delete the first element
             self.alphas.append(np.divide(alpha_data, np.sum(alpha_data)))
             self.n_products_sold_means_history.append(mean_prod_sold)
         # updating estimated means (useless if else, only for robustness)

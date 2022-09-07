@@ -9,7 +9,9 @@ class step5_ucb1(step3_ucb1):
     def __init__(self, n_products, n_arms, prices, env: Environment, crs_sw=np.inf, step5_only_sw=np.inf):
         super().__init__(n_products, n_arms, prices, env, crs_sw)
         self.graph_weights_means = np.ones((self.n_products, self.n_products))
+        # self.graph_data is a history; each element contains 2 matrix: the estimated graph matrix for that day, and the number of visualizations on that edge
         self.graph_data = []
+        # sliding window on the graph weights
         self.step5_only_sw = step5_only_sw
 
     def pull_arms(self):
@@ -24,8 +26,8 @@ class step5_ucb1(step3_ucb1):
         if len(self.graph_data) < self.step5_only_sw:
             self.graph_data.append([graph_weights_mean.tolist(), visualizations.tolist()])
         else:
-            self.graph_data.pop(0)
-            self.graph_data.append([graph_weights_mean.tolist(), visualizations.tolist()])
+            self.graph_data.pop(0) # delete the first element
+            self.graph_data.append([graph_weights_mean.tolist(), visualizations.tolist()]) # adding a new tuple to the history
         # updating estimated means (useless if else, only for robustness)
         if len(self.graph_data) <= self.step5_only_sw:
             self.graph_weights_means = np.divide(np.sum(np.multiply(np.array(self.graph_data)[:, 0], np.array(self.graph_data)[:, 1]), axis=0), np.maximum(np.sum(np.array(self.graph_data)[:, 1], axis=0), 1))
