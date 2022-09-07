@@ -638,7 +638,7 @@ class Environment:
             for feat_couple in group_list:
                 # Adapt graph_weights to the specific case
                 i,j = feat_couple
-                user_index = self.feature_matrix[i,j]]
+                user_index = self.feature_matrix[i,j]
                 self.graph_weights.append(copy.deepcopy(self.theoretical_values['graph_weights'][user_index]))
                 # Retrieve the frequency estimate of couple of features needed
                 prob_list.append(feat_prob_mat[i,j])
