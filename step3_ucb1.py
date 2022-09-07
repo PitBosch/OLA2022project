@@ -11,6 +11,10 @@ class step3_ucb1(ucb_learner):
         self.widths = np.ones((n_products, n_arms)) * np.inf
         self.prices = prices
         self.greedy_opt = Greedy_optimizer(env)
+        self.env = env
+        #
+        self.collected_rewards = []
+        self.regret = []
 
     def pull_arms(self):
         sampled_cr = np.minimum(np.array([self.means + self.widths]), 1) # limit to 1 for all the crs
@@ -38,3 +42,30 @@ class step3_ucb1(ucb_learner):
                     self.widths[product_idx, arm_idx] = np.sqrt(2 * np.log(self.t) / (n*(self.t - 1)))
                 else:
                     self.widths[product_idx, arm_idx] = np.inf
+
+    def run(self, n_days, daily_users):
+        self.reset()
+        collected_rewards_temp = []
+        opt_reward = self.env.optimal_reward()[0]
+        instant_regret = []
+        for t in range(n_days):
+            pulled_arms = self.pull_arms()
+            day_data = self.env.simulate_day(daily_users, pulled_arms, ["conversion_rates", "alpha_ratios"])
+            n_users = np.sum(day_data["initial_prod"])
+            cr_data = day_data["CR_data"]
+            self.update(pulled_arms, cr_data, n_users)
+            reward = self.env.expected_reward(pulled_arms)
+            collected_rewards_temp.append(reward)
+            instant_regret.append(opt_reward - reward)
+        self.collected_rewards.append(collected_rewards_temp)
+        cumulative_regret = np.cumsum(instant_regret)
+        self.regret.append(cumulative_regret)
+
+    def reset(self):
+        super().reset()
+        self.means = np.zeros((self.n_products, self.n_arms))
+        self.widths = np.ones((self.n_products, self.n_arms)) * np.inf
+
+    def print_estimations(self):
+        print("Conversion rates - estimated means:\n", self.means)
+        print("\nConversion rates - estimated widths:\n", self.means)

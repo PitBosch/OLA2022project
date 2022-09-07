@@ -21,3 +21,8 @@ class ucb_learner:
         else:
             self.pulled.pop(0)
             self.pulled.append([arms_pulled, n_of_clicks_for_product.tolist(), crs_estimation.tolist()])
+
+    def reset(self):
+        self.t = 1
+        self.pulled = []
+        self.daily_users = []
