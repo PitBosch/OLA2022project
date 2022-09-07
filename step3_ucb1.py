@@ -17,29 +17,30 @@ class step3_ucb1(ucb_learner):
         self.regret = []
 
     def pull_arms(self):
-        sampled_cr = np.minimum(np.array([self.means + self.widths]), 1) # limit to 1 for all the crs
+        # limit to 1 for all the crs
+        sampled_cr = np.minimum(np.array([self.means + self.widths]), 1)
         arms_pulled = self.greedy_opt.run(conversion_rates=sampled_cr)["combination"]
         return arms_pulled
 
     def update(self, arms_pulled, cr_data, n_users):
         super().update(arms_pulled, cr_data, n_users)
         for product_idx in range(self.n_products):
-            # weighted mean (on the n°_of_collected_samples so far) for the arm pulled
-            mask = np.array(self.pulled)[:, 0, product_idx] == arms_pulled[product_idx]
-            n_clicks = np.array(self.pulled)[:, 1, product_idx]
-            n_conv = np.array(self.pulled)[:, 2, product_idx]
-            n_clicks_masked = np.multiply(mask, n_clicks)
-            n_conv_masked = np.multiply(mask, n_conv)
-            n_clicks_masked_sum = np.sum(n_clicks_masked)
-            product_x_arm_pulled_weighted_mean = np.sum(np.multiply(n_clicks_masked, n_conv_masked))/n_clicks_masked_sum
-            #
+            # start: computation of the weighted mean (on the n°_of_collected_samples so far) for the arm pulled
+            mask = np.array(self.pulled)[:, 0, product_idx] == arms_pulled[product_idx] # mask matrix to select all the datas of a specified arm
+            n_clicks = np.array(self.pulled)[:, 1, product_idx] # n° of click vector for a specific arm
+            n_conv = np.array(self.pulled)[:, 2, product_idx] # conversion rates mean (vector) for a specific arm
+            n_clicks_masked = np.multiply(mask, n_clicks) # n° of clicks for a specific arm (vector)
+            n_conv_masked = np.multiply(mask, n_conv) # cr vector for a specific arm (vector)
+            n_clicks_masked_sum = np.sum(n_clicks_masked) # n° of total samples collected for a specific arm
+            product_x_arm_pulled_weighted_mean = np.sum(np.multiply(n_clicks_masked, n_conv_masked))/n_clicks_masked_sum # weighted mean computation on the estimated cr for each day
+            # end: weighted mean computed
             self.means[product_idx, arms_pulled[product_idx]] = product_x_arm_pulled_weighted_mean
         for product_idx in range(self.n_products):
             for arm_idx in range(self.n_arms):
-                # below: number of visualization for product x with arm x, divided by the estimated number of daily users
+                # (below) n = number of visualization for product x with arm x, divided by the estimated mean number of daily users
                 n = np.sum(np.multiply(np.array(self.pulled, dtype=np.int32)[:, 0, product_idx] == arm_idx, np.array(self.pulled, dtype=np.int32)[:, 1, product_idx]))/np.mean(self.daily_users)
                 if n > 0:
-                    self.widths[product_idx, arm_idx] = np.sqrt(2 * np.log(self.t) / (n*(self.t - 1)))
+                    self.widths[product_idx, arm_idx] = np.sqrt(2 * np.log(self.t) / (n * (self.t - 1)))
                 else:
                     self.widths[product_idx, arm_idx] = np.inf
 

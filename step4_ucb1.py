@@ -21,7 +21,7 @@ class step4_ucb1(step3_ucb1):
 
     def update(self, arms_pulled, cr_data, n_users, alpha_data, mean_prod_sold):
         super().update(arms_pulled, cr_data, n_users)
-        # updating history lists
+        # updating history lists, according to the sliding window length
         if len(self.alphas) < self.step4_only_sw:
             self.alphas.append(np.divide(alpha_data, np.sum(alpha_data)))
             self.n_products_sold_means_history.append(mean_prod_sold)
@@ -30,7 +30,7 @@ class step4_ucb1(step3_ucb1):
             self.n_products_sold_means_history.pop(0)
             self.alphas.append(np.divide(alpha_data, np.sum(alpha_data)))
             self.n_products_sold_means_history.append(mean_prod_sold)
-        # updating estimated means
+        # updating estimated means (useless if else, only for robustness)
         if len(self.alphas) < self.step4_only_sw:
             self.alphas_means = np.mean(self.alphas, axis=0)
             self.n_products_sold_means = np.mean(self.n_products_sold_means_history, axis=0)

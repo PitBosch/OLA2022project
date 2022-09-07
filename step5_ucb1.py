@@ -20,12 +20,13 @@ class step5_ucb1(step3_ucb1):
     def update(self, arms_pulled, cr_data, n_users, visualizations, clicks):
         super().update(arms_pulled, cr_data, n_users)
         graph_weights_mean = np.divide(clicks, np.maximum(visualizations, 1))
+        # updating graph data according to the sliding window length
         if len(self.graph_data) < self.step5_only_sw:
             self.graph_data.append([graph_weights_mean.tolist(), visualizations.tolist()])
         else:
             self.graph_data.pop(0)
             self.graph_data.append([graph_weights_mean.tolist(), visualizations.tolist()])
-        # updating estimated means
+        # updating estimated means (useless if else, only for robustness)
         if len(self.graph_data) <= self.step5_only_sw:
             self.graph_weights_means = np.divide(np.sum(np.multiply(np.array(self.graph_data)[:, 0], np.array(self.graph_data)[:, 1]), axis=0), np.maximum(np.sum(np.array(self.graph_data)[:, 1], axis=0), 1))
         else:
