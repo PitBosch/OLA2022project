@@ -10,7 +10,7 @@ class ucb_learner:
         # each element is composed by 3 vectors: the arms pulled | the n° of visualizations for each arm pulled | the cr estimation for that day for each arm pulled
         self.pulled = []
         self.crs_sw = crs_sw # sliding window for the crs
-        self.daily_users = [] # n° of users observed for each day
+        self.daily_users = [] # list of int; the number of users observed each day
 
     def update(self, arms_pulled, cr_data, n_users):
         self.daily_users.append(n_users)

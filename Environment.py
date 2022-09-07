@@ -696,7 +696,7 @@ class Environment:
                 new_std = old_std/std_lambda + np.random.rand()*(old_std*std_lambda - old_std/std_lambda)
                 user.res_price_params['std'][i] = new_std
             user.set_res_price_distr()
-            # update the theoretical_values for the coversion rates
+            # update the theoretical_values for the conversion rates
             CR_matrix = []
             CR_list = []
             for product in self.products:
@@ -714,7 +714,7 @@ class Environment:
             # Change the reservation prices' parameters
             self.users[i].res_price_params = new_res_price_param[i].copy()
             self.users[i].set_res_price_distr()
-            # update the theoretical_values for the coversion rates
+            # update the theoretical_values for the conversion rates
             CR_matrix = []
             CR_list = []
             for product in self.products:
