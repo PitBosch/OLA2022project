@@ -15,8 +15,7 @@ class Abrupt_learner(ucb_learner):
         #
         self.collected_rewards = []
         self.regret = []
-        self.opt_reward_history = []
-        self.changes_dict = changes_dict
+        self.changes_dict = changes_dict ###################################################################################
         self.initial_res_price_param = copy.deepcopy(env.users[0].res_price_params) ###################################################################################
 
     def pull_arms(self):
@@ -51,7 +50,6 @@ class Abrupt_learner(ucb_learner):
         self.reset()
         collected_rewards_temp = []
         opt_reward = self.env.optimal_reward()[0]
-        opt_reward_list = []
         instant_regret = []
         
         for t in range(n_days):
@@ -66,17 +64,16 @@ class Abrupt_learner(ucb_learner):
             reward = self.env.expected_reward(pulled_arms)
             collected_rewards_temp.append(reward)
             instant_regret.append(opt_reward - reward)
-            opt_reward_list.append(opt_reward) ###################################################################################
+            
         self.collected_rewards.append(collected_rewards_temp)
         cumulative_regret = np.cumsum(instant_regret)
         self.regret.append(cumulative_regret)
-        self.opt_reward_history.append(opt_reward_list) ###################################################################################
 
     def reset(self):
         super().reset()
         self.means = np.zeros((self.n_products, self.n_arms))
         self.widths = np.ones((self.n_products, self.n_arms)) * np.inf
-        self.env.users[0].res_price_params = copy.deepcopy(self.initial_res_price_param) ###################################################################################
+        self.env.abrupt_change_deterministic([self.initial_res_price_param]) ###################################################################################
 
     def print_estimations(self):
         print("Conversion rates - estimated means:\n", self.means)

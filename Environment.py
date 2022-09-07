@@ -648,29 +648,37 @@ class Environment:
             
         return reward
 
-    def optimal_reward(self, user_index=None):
+    def optimal_reward(self, user_index=None, Disaggregated = False):
 
         """This method explores all the possible combination with a brute force approach to determine which is the price combination
             that returns the highest expected reward. It returns both the optimal price combination and optimal expected reward"""
         optimal_combination = [0, 0, 0, 0, 0]
-        reward_max = 0
-        reward = 0
+        reward_max = 0.
+        reward = 0.
         # enumerate all possible combinations of prices (4^5, 1024)
         possible_combinations = []
-        # pensare a un modo più intelligente
         for i1 in range(4):
             for i2 in range(4):
                 for i3 in range(4):
                     for i4 in range(4):
                         for i5 in range(4):
                             possible_combinations.append([i1, i2, i3, i4, i5])
+
+        if Disaggregated :
+            rewards_list = np.zeros(len(self.users))
+            opt_combination_list = [[]]*3
+            for i in range(len(self.users)) :
+                rewards_list[i], opt_combination_list[i] = self.optimal_reward(user_index = i)
+            return opt_combination_list, rewards_list
+
         for price_combination in possible_combinations:
             # compute the reward for the price combination considered
-            reward = self.expected_reward(price_combination, user_index)
+            reward = self.expected_reward(price_combination = price_combination, user_index = user_index)
             # update if actual  reward is greater than best past  reward
             if reward > reward_max:
                 reward_max = reward
                 optimal_combination = price_combination.copy()
+        
         return reward_max, optimal_combination
 
     def abrupt_change_random(self, mean_sigma, std_lambda):
