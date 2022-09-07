@@ -22,9 +22,11 @@ def feature_matrix_to_list(feat_mat):
     n_groups = int(np.max(feat_mat)) + 1
 
     for group in range(n_groups):
-        group_list = list(np.where(feat_mat == group))
-        group_list = [list(x) for x in group_list]
-        feature_list.append(group_list)
+        i_list, j_list = np.where(feat_mat == group)
+        group_list = []
+        for k in range(len(i_list)):
+            group_list.append([i_list[k], j_list[k]])
+        feature_list.append(group_list.copy())
 
     return feature_list
 
@@ -205,7 +207,7 @@ class Environment:
         #   - graph weights
         # In fact, when one of these variable is uncertain we need its approximation from the simulation
         # For this reason we need to create some structure to store these values
-        n_groups = len(price_combination_list)
+        d = len(price_combination_list[0])
         to_save_dict = {}
         to_save_dict['n_users'] = 0
         if "conversion_rates" in to_save:
@@ -238,16 +240,16 @@ class Environment:
             # Retrieve right key to access to_sava_data according to features sampled
             feat_key = str(feat1)+str(feat2)
             # Increase number of users appeared for the couple of features
-            to_save_data[feat_key][n_users] += 1
+            to_save_data[feat_key]['n_users'] += 1
             # user category
             feat_ind = [int(feat1), int(feat2)]
-            user_ind = self.feature_matrix[feat_ind]
-            comb_ind = context_matrix[feat_ind]
+            user_ind = int(self.feature_matrix[feat_ind[0]][feat_ind[1]])
+            comb_ind = int(context_matrix[feat_ind[0]][feat_ind[1]])
             # we increment the daily profit of the website by the profit done with the simulated user
             self.execute(self.users[user_ind], price_combination_list[comb_ind], to_save_data[feat_key])
             # notice that we have passed only the dictionary for the specific user category sampled
         
-        for data_dict in to_save_data:
+        for data_dict in list(to_save_data.values()):
             # if conversion rates are uncertain save the result obtained by the daily simulation
             if "conversion_rates" in to_save:
                 data_dict["CR_vector"] = data_dict["CR_data"][0]/(data_dict["CR_data"][1]+1e-6)
