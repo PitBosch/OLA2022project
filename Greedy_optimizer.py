@@ -6,7 +6,8 @@ class Greedy_optimizer:
     def __init__(self, env: Environment):
         self.env = env
 
-    def greedy_iteration(self, price_combination: list[int], actual_reward, conversion_rates=None, alphas_ratio=None, n_prod=None, graph_weights=None):
+    def greedy_iteration(self, price_combination: list[int], actual_reward, conversion_rates=None, alphas_ratio=None, n_prod=None,
+                            graph_weights=None, user_index=None, group_list=None, feat_prob_mat=None):
         """ Method for a single iteration of the greedy algorithm. Try to increase the prices for the products
             one at the time and decide, if it is possible, to increase the price for the product with the 
             highest positive increase"""
@@ -22,7 +23,7 @@ class Greedy_optimizer:
             if price_combination[i] < 3:
                 new_combination = price_combination.copy() 
                 new_combination[i] += 1
-                new_rewards[i] = self.env.expected_reward(new_combination, conversion_rates, alphas_ratio, n_prod, graph_weights)
+                new_rewards[i] = self.env.expected_reward(new_combination, conversion_rates, alphas_ratio, n_prod, graph_weights, user_index, group_list, feat_prob_mat)
         diff = np.array(new_rewards) - np.array(actual_reward)
         if max(diff) > 0:
             i_opt = np.argmax(new_rewards)
@@ -32,13 +33,13 @@ class Greedy_optimizer:
         return return_dict
 
 
-    def run(self, conversion_rates=None, alphas_ratio=None, n_prod=None, graph_weights=None):
+    def run(self, conversion_rates=None, alphas_ratio=None, n_prod=None, graph_weights=None, user_index=None, group_list=None, feat_prob_mat=None):
         """ Method for the complete run of the greedy algorithm. The starting point is the combination with all the lowest prices"""
         updated = True
         # Initially we consider all the lowest prices *Recall that prices are stored in ascending order
         price_combination = [0 for x in self.env.products]
         # Initialize the optimal reward with the value linked to the expected reward for lowest prices
-        optimal_reward = self.env.expected_reward(price_combination, conversion_rates, alphas_ratio, n_prod, graph_weights)
+        optimal_reward = self.env.expected_reward(price_combination, conversion_rates, alphas_ratio, n_prod, graph_weights, user_index, group_list, feat_prob_mat)
         # Create a list of list to store the evolution of the algorithm
         # history = []
         while updated:

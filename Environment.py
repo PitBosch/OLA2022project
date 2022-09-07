@@ -569,7 +569,8 @@ class Environment:
             reward += alpha_i * self.product_reward(i, user_index, price_combination)
         return reward
 
-    def expected_reward(self, price_combination, conversion_rates=None, alpha_ratios=None, n_prod=None, graph_weights=None, user_index=None):
+    def expected_reward(self, price_combination, conversion_rates=None, alpha_ratios=None, n_prod=None,
+                        graph_weights=None, user_index=None, group_list=None, feat_prob_mat=None):
         """ Method that compute the expected reward related to the prices' combination passed to the function.
             If the only argument passed is the price combination the function returns the theoretical expected reward.
             The method can receive 4 optional arguments:
@@ -613,26 +614,39 @@ class Environment:
             self.graph_weights = copy.deepcopy(self.theoretical_values["graph_weights"])
         else:
             self.graph_weights = graph_weights
+        
         # initialize final reward 
         reward = 0.
 
         # if in the environment we have only 1 user we simply return the single_reward linked to the user
         if len(self.users) == 1:
             reward = self.user_reward(0, price_combination)
+        # The default value for user_index is None, representing the case of aggregated demand curve
+        if user_index is None and group_list is None:
+            # if we have more than one user we have to weight the reward linked to the users with the 
+            # theoretical frequencies of the user categories (user_cat_prob)
+            for i in range(len(self.users)):
+                user_reward = self.user_reward(i, price_combination)
+                reward += self.user_cat_prob[i] * user_reward
+        # Otherwise we return the expected reward for the specified user
         else:
-            # The default value for user_index is None, representing the case of aggregated demand curve
-            if user_index is None:
-                # if we have more than one user we have to weight the reward linked to the users with the 
-                # theoretical frequencies of the user categories (user_cat_prob)
-                for i in range(len(self.users)):
-                    user_reward = self.user_reward(i, price_combination)
-                    reward += self.user_cat_prob[i] * user_reward
-            # Otherwise we return the expected reward for the specified user
-            else:
-                reward = self.user_reward(user_index, price_combination)
+            reward = self.user_reward(user_index, price_combination)
+        # STEP7 (CONTEXT GENERATION) CASE ONLY!
+        if group_list is not None:
+            self.graph_weights = []
+            prob_list = []
+            for feat_couple in group_list:
+                # Adapt graph_weights to the specific case
+                i,j = feat_couple
+                user_index = self.feature_matrix[i,j]]
+                self.graph_weights.append(copy.deepcopy(self.theoretical_values['graph_weights'][user_index]))
+                # Retrieve the frequency estimate of couple of features needed
+                prob_list.append(feat_prob_mat[i,j])
+            # Compute the reward for each couple of features and weight the result for the corresponding probability
+            for user_index in range(len(group_list)):
+                user_reward += prob_list[user_index]*self.user_reward(user_index, price_combination)
             
         return reward
-
 
     def optimal_reward(self, user_index=None):
         """This method explores all the possible combination with a brute force approach to determine which is the price combination
