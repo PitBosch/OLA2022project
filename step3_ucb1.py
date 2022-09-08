@@ -2,6 +2,7 @@ import numpy as np
 from ucb_learner import *
 from Environment import *
 from Greedy_optimizer import *
+DIVISION_NUMBER = 3
 
 
 class step3_ucb1(ucb_learner):
@@ -15,6 +16,8 @@ class step3_ucb1(ucb_learner):
         #
         self.collected_rewards = []
         self.regret = []
+        # for Elisa's printing estimations
+        self.crs_estimations_over_n_experiments = []
 
     def pull_arms(self):
         # limit to 1 for all the crs
@@ -27,10 +30,10 @@ class step3_ucb1(ucb_learner):
         for product_idx in range(self.n_products):
             # start: computation of the weighted mean (on the n°_of_collected_samples so far) for the arm pulled
             mask = np.array(self.pulled)[:, 0, product_idx] == arms_pulled[product_idx] # mask matrix to select all the datas of a specified arm
-            n_clicks = np.array(self.pulled)[:, 1, product_idx] # n° of click vector for a specific arm
-            n_conv = np.array(self.pulled)[:, 2, product_idx] # conversion rates mean (vector) for a specific arm
-            n_clicks_masked = np.multiply(mask, n_clicks) # n° of clicks for a specific arm (vector)
-            n_conv_masked = np.multiply(mask, n_conv) # cr vector for a specific arm (vector)
+            n_clicks = np.array(self.pulled)[:, 1, product_idx] # n° of click [vector] for a specific arm
+            n_conv = np.array(self.pulled)[:, 2, product_idx] # conversion rates mean [vector] for a specific arm
+            n_clicks_masked = np.multiply(mask, n_clicks) # n° of total clicks for a specific arm [vector]
+            n_conv_masked = np.multiply(mask, n_conv) # cr vector for a specific arm [vector]
             n_clicks_masked_sum = np.sum(n_clicks_masked) # n° of total samples collected for a specific arm
             product_x_arm_pulled_weighted_mean = np.sum(np.multiply(n_clicks_masked, n_conv_masked))/n_clicks_masked_sum # weighted mean computation on the estimated cr for each day
             # end: weighted mean computed
@@ -38,7 +41,7 @@ class step3_ucb1(ucb_learner):
         for product_idx in range(self.n_products):
             for arm_idx in range(self.n_arms):
                 # (below) n = number of visualization for product x with arm x, divided by the estimated mean number of daily users
-                n = np.sum(np.multiply(np.array(self.pulled, dtype=np.int32)[:, 0, product_idx] == arm_idx, np.array(self.pulled, dtype=np.int32)[:, 1, product_idx]))/np.mean(self.daily_users)
+                n = np.sum(np.multiply(np.array(self.pulled, dtype=np.int32)[:, 0, product_idx] == arm_idx, np.array(self.pulled, dtype=np.int32)[:, 1, product_idx]))/(np.mean(self.daily_users)/DIVISION_NUMBER)
                 if n > 0:
                     self.widths[product_idx, arm_idx] = np.sqrt(2 * np.log(self.t) / (n * (self.t - 1)))
                 else:
@@ -61,6 +64,7 @@ class step3_ucb1(ucb_learner):
         self.collected_rewards.append(collected_rewards_temp)
         cumulative_regret = np.cumsum(instant_regret)
         self.regret.append(cumulative_regret)
+        self.crs_estimations_over_n_experiments.append([self.means, self.widths])
 
     def reset(self):
         super().reset()
@@ -68,5 +72,6 @@ class step3_ucb1(ucb_learner):
         self.widths = np.ones((self.n_products, self.n_arms)) * np.inf
 
     def print_estimations(self):
-        print("Conversion rates - estimated means:\n", self.means)
-        print("\nConversion rates - estimated widths:\n", self.means)
+        # print("Conversion rates - estimated means (over n experiments):\n", np.mean(np.array(self.crs_estimations_over_n_experiments)[:, 0], axis=0))
+        # print("Conversion rates - estimated widths (over n experiments):\n", np.mean(np.array(self.crs_estimations_over_n_experiments)[:, 1], axis=0))
+        print("Conversion rates estimation (means + widths, over n experiments):\n", np.mean(np.sum([np.array(self.crs_estimations_over_n_experiments)[:, 0], np.array(self.crs_estimations_over_n_experiments)[:, 1]], axis=0), axis=0))

@@ -37,8 +37,3 @@ class step6_sw_ucb(step5_ucb1):
     def reset(self):
         super().reset()
         self.env.abrupt_change_deterministic([self.initial_res_price_param]) ###################
-
-    def print_estimations(self):
-        print("Estimated graph weights (lambda included):\n\n", self.graph_weights_means)
-        print("\nConversion rates - estimated means:\n", self.means)
-        print("\nConversion rates - estimated widths:\n", self.means)
