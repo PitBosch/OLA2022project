@@ -64,6 +64,7 @@ class step3_ucb1(ucb_learner):
         self.collected_rewards.append(collected_rewards_temp)
         cumulative_regret = np.cumsum(instant_regret)
         self.regret.append(cumulative_regret)
+        # updating Elisa's parameters
         self.crs_estimations_over_n_experiments.append([self.means, self.widths])
 
     def reset(self):

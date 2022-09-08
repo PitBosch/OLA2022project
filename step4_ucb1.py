@@ -51,7 +51,7 @@ class step4_ucb1(step3_ucb1):
             self.n_products_sold_means = np.mean(self.n_products_sold_means_history[-self.step4_only_sw:], axis=0)
         # start: step 4 only widths update
         # calculation of step 4 only time, as minimum with the sliding window for the step 4 (that is different from the sw for the crs)
-        step4_t = np.amin([len(self.alphas), len(self.n_products_sold_means_history), self.step4_only_sw], axis=0) + 1
+        step4_t = np.amin([len(self.alphas) + 1, len(self.n_products_sold_means_history) + 1, self.step4_only_sw], axis=0)
         for product_idx in range(self.n_products):
             # total number of samples on the secondary product [product_idx_2] for [prod_idx_1] as primary
             alphas_n = len(self.alphas)

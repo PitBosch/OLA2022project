@@ -40,7 +40,7 @@ class step5_ucb1(step3_ucb1):
             self.graph_weights_means = np.divide(np.sum(np.multiply(np.array(self.graph_data[-self.step5_only_sw:])[:, 0], np.array(self.graph_data[-self.step5_only_sw:])[:, 1]), axis=0), np.sum(np.array(self.graph_data[-self.step5_only_sw:])[:, 1], axis=0))
         # start: graph weights widths update
         # calculation of graph_weights time, as minimum withs the sliding window for the step 5 (that is different from the sw for the crs)
-        graph_weights_t = np.amin([len(self.graph_data), self.step5_only_sw], axis=0) + 1
+        graph_weights_t = np.amin([len(self.graph_data) + 1, self.step5_only_sw], axis=0)
         for product_idx_1 in range(self.n_products):
             for product_idx_2 in range(self.n_products):
                 # total number of samples on the secondary product [product_idx_2] for [prod_idx_1] as primary
