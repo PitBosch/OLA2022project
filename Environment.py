@@ -1,4 +1,3 @@
-from zmq import NULL
 from UserCat import *
 from Product import *
 import copy
@@ -47,6 +46,15 @@ def generate_users_prob(feat_matrix, feat_prob):
     
     return prob_list
 
+def generate_feat_prob_matrix(feat_prob):
+    feat_prob_matrix = np.zeros((2,2))
+    for i in range(2):
+        for j in range(2):
+            p1 = feat_prob[0] if i == 1 else 1-feat_prob[0]
+            p2 = feat_prob[1] if j == 1 else 1-feat_prob[1]
+            feat_prob_matrix[i,j] = p1*p2
+    return feat_prob_matrix
+
 class Environment:
     """Class containing all the parameters that characterize the problem, from the classes of users to the list of available products."""
 
@@ -63,6 +71,8 @@ class Environment:
         self.feature_prob = feat_prob
         # relative frequency of the users category
         self.user_cat_prob = generate_users_prob(feat_matrix, feat_prob)
+        # Matrix of probability for the possible couple of features
+        self.feat_prob_matrix = generate_feat_prob_matrix(feat_prob)
         """ 4 parameters can be certain or uncertain in our simulations :
             - conversion rate: list of matrices representing the probabilities to buy a product i at a price j for the user k
             - alpha_ratios : list of lists of probabilities to land on product i at first for user j
@@ -585,33 +595,76 @@ class Environment:
         
         # At first, we have to deal with the argument passed and initialize the variable conversion_rate, alpha_ratios,
         # n_prod_sold and graph_weights of the environment accordingly
-
-        # CONVERSION RATES
+        #------------------#
+        # CONVERSION RATES #
+        #------------------#
         if conversion_rates is None:
             # conversion rate is certain, so we consider the theoretical values given by the parameters chosen for
             # the gamma distribution of each user
-            self.conversion_rates = copy.deepcopy(self.theoretical_values["conversion_rates"])
+            # BUT if we are passing a group list we must reorder the theoretical_values
+            if group_list is not None:
+                self.conversion_rates = []
+                for feat_couple in group_list:
+                    # Adapt graph_weights to the specific case
+                    i,j = feat_couple
+                    user_index = self.feature_matrix[i,j]
+                    self.conversion_rates.append(copy.deepcopy(self.theoretical_values["conversion_rates"][user_index]))
+            else:
+                self.conversion_rates = copy.deepcopy(self.theoretical_values["conversion_rates"])
         else :
             # conversion rate are uncertain, so we consider the guess passed to the function
             self.conversion_rates = conversion_rates
-        # ALPHA RATIOS
+        #--------------#
+        # ALPHA RATIOS #
+        #--------------#
         if alpha_ratios is None:
             # alpha_ratios are assumed to be certain
-            self.alpha_ratios = copy.deepcopy(self.theoretical_values["alpha_ratios"])
+            # BUT if we are passing a group list we must reorder the theoretical_values
+            if group_list is not None:
+                self.alpha_ratios = []
+                for feat_couple in group_list:
+                    # Adapt graph_weights to the specific case
+                    i,j = feat_couple
+                    user_index = self.feature_matrix[i,j]
+                    self.alpha_ratios.append(copy.deepcopy(self.theoretical_values["alpha_ratios"][user_index]))
+            else:
+                self.alpha_ratios = copy.deepcopy(self.theoretical_values["alpha_ratios"])
         else:
             # alpha_ratios uncertain, so we consider the guess passed to the function
             self.alpha_ratios = alpha_ratios
-        # NUMBER OF PRODUCT SOLD
+        #------------------------#
+        # NUMBER OF PRODUCT SOLD #
+        #------------------------#
         if n_prod is None:
             # number of product sold is certain, so we retrieve the theoretical values
-            self.n_prod_sold = copy.deepcopy(self.theoretical_values["n_prod_sold"])
+            # BUT if we are passing a group list we must reorder the theoretical_values
+            if group_list is not None:
+                self.n_prod_sold = []
+                for feat_couple in group_list:
+                    # Adapt graph_weights to the specific case
+                    i,j = feat_couple
+                    user_index = self.feature_matrix[i,j]
+                    self.n_prod_sold.append(copy.deepcopy(self.theoretical_values["n_prod_sold"][user_index]))
+            else:
+                self.n_prod_sold = copy.deepcopy(self.theoretical_values["n_prod_sold"])
         else:
             # number of product sold is uncertain, so we consider a guess of the mean value
             self.n_prod_sold = n_prod
-        # GRAPH WEIGTHS
+        #-–––-----------#
+        # GRAPH WEIGTHS #
+        #---------------#
         if graph_weights is None:
             # Graph weights are considered certain, so we simply use the values stored in the user classes
-            self.graph_weights = copy.deepcopy(self.theoretical_values["graph_weights"])
+            # BUT if we are passing a group list we must reorder the theoretical_values
+            if group_list is not None:
+                self.graph_weights = []
+                for feat_couple in group_list:
+                    # Adapt graph_weights to the specific case
+                    i,j = feat_couple
+                    user_index = self.feature_matrix[i,j]
+                    self.graph_weights.append(copy.deepcopy(self.theoretical_values['graph_weights'][user_index]))
+            else:
+                self.graph_weights = copy.deepcopy(self.theoretical_values["graph_weights"])
         else:
             self.graph_weights = graph_weights
         
@@ -621,30 +674,33 @@ class Environment:
         # if in the environment we have only 1 user we simply return the single_reward linked to the user
         if len(self.users) == 1:
             reward = self.user_reward(0, price_combination)
-        # The default value for user_index is None, representing the case of aggregated demand curve
-        if user_index is None and group_list is None:
-            # if we have more than one user we have to weight the reward linked to the users with the 
-            # theoretical frequencies of the user categories (user_cat_prob)
-            for i in range(len(self.users)):
-                user_reward = self.user_reward(i, price_combination)
-                reward += self.user_cat_prob[i] * user_reward
-        # Otherwise we return the expected reward for the specified user
-        else:
-            reward = self.user_reward(user_index, price_combination)
+        
         # STEP7 (CONTEXT GENERATION) CASE ONLY!
         if group_list is not None:
-            self.graph_weights = []
             prob_list = []
             for feat_couple in group_list:
                 # Adapt graph_weights to the specific case
                 i,j = feat_couple
-                user_index = self.feature_matrix[i,j]
-                self.graph_weights.append(copy.deepcopy(self.theoretical_values['graph_weights'][user_index]))
-                # Retrieve the frequency estimate of couple of features needed
-                prob_list.append(feat_prob_mat[i,j])
+                if feat_prob_mat is None:
+                    # Retrieve theoretica values
+                    prob_list.append(self.feat_prob_matrix[i,j])
+                else:
+                    # Retrieve the frequency estimate of couple of features needed
+                    prob_list.append(feat_prob_mat[i,j])
             # Compute the reward for each couple of features and weight the result for the corresponding probability
             for user_index in range(len(group_list)):
-                user_reward += prob_list[user_index]*self.user_reward(user_index, price_combination)
+                reward += prob_list[user_index]*self.user_reward(user_index, price_combination)
+        else:        
+            # The default value for user_index is None, representing the case of aggregated demand curve
+            if user_index is None :
+                # if we have more than one user we have to weight the reward linked to the users with the 
+                # theoretical frequencies of the user categories (user_cat_prob)
+                for i in range(len(self.users)):
+                    user_reward = self.user_reward(i, price_combination)
+                    reward += self.user_cat_prob[i] * user_reward
+            # Otherwise we return the expected reward for the specified user
+            else :
+                reward = self.user_reward(user_index, price_combination)
             
         return reward
 
@@ -669,7 +725,7 @@ class Environment:
             opt_combination_list = [[]]*3
             for i in range(len(self.users)) :
                 rewards_list[i], opt_combination_list[i] = self.optimal_reward(user_index = i)
-            return opt_combination_list, rewards_list
+            return rewards_list, opt_combination_list
 
         for price_combination in possible_combinations:
             # compute the reward for the price combination considered
