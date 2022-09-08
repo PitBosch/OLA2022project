@@ -33,6 +33,8 @@ class step6_sw_ucb(step5_ucb1):
         self.collected_rewards.append(collected_rewards_temp)
         cumulative_regret = np.cumsum(instant_regret)
         self.regret.append(cumulative_regret)
+        # Restore initial setting of the environment
+        self.env.abrupt_change_deterministic([self.initial_res_price_param])
         # updating Elisa's parameters'
         self.crs_estimations_over_n_experiments.append([self.means, self.widths])
         self.graph_weights_estimations_over_n_experiments.append([self.graph_weights_means, self.graph_weights_widths])
