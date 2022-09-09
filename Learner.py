@@ -1,5 +1,5 @@
-from Environment import Environment
-from Greedy_optimizer import Greedy_optimizer
+from Environment import *
+from Greedy_optimizer import *
 import numpy as np
 import copy
 

@@ -23,7 +23,8 @@ class Greedy_optimizer:
             if price_combination[i] < 3:
                 new_combination = price_combination.copy() 
                 new_combination[i] += 1
-                new_rewards[i] = self.env.expected_reward(new_combination, conversion_rates, alphas_ratio, n_prod, graph_weights, user_index, group_list, feat_prob_mat)
+                new_rewards[i] = self.env.expected_reward(new_combination, conversion_rates, alphas_ratio, n_prod,
+                                                            graph_weights, user_index, group_list, feat_prob_mat)
         diff = np.array(new_rewards) - np.array(actual_reward)
         if max(diff) > 0:
             i_opt = np.argmax(new_rewards)
@@ -44,7 +45,8 @@ class Greedy_optimizer:
         # history = []
         while updated:
             # history.append(price_combination.copy())
-            iter_result = self.greedy_iteration(price_combination,  optimal_reward, conversion_rates, alphas_ratio, n_prod, graph_weights)
+            iter_result = self.greedy_iteration(price_combination,  optimal_reward, conversion_rates, alphas_ratio, n_prod,
+                                                graph_weights, user_index, group_list, feat_prob_mat)
             updated = iter_result["updated"]
             optimal_reward = iter_result["expected_reward"]
         iter_result.pop("updated")
