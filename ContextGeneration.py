@@ -1,3 +1,6 @@
+from asyncio.proactor_events import BaseProactorEventLoop
+from msilib.schema import MsiDigitalCertificate
+from operator import truediv
 from os import environ
 from shutil import which
 from Environment import *
@@ -13,9 +16,10 @@ class ContextGeneration():
         self.confidence=0.95
         #confidence for lower confidence bound
         self.feature=None
+        self.group_list=[[[0,0],[0,1],[1,0],[1,1]]]
         #feature selezionata
         #self.contextvalue=np.array() #un vettore di grandezza 3 0:non splitto 1:splitto feature 1 2:splitto feature 2
-        self.pmatrix=np.array([[0,0],[0,0]]) #la prima pmatrix che passo è una matrice di o di zeri o di uno 
+        self.list_matrix=[np.array([[0,0],[0,0]]),np.array([[0,0],[0,0]]),np.array([[0,0],[0,0]])]#la prima pmatrix che passo è una matrice di o di zeri o di uno 
         # sample the features 
         #non so se tenerlo qua o passarlo ogni volta ma
         #mi sa meglio passarlo ogni volta
@@ -35,38 +39,74 @@ class ContextGeneration():
         for group in group_list:
             cvarray.append(Greedy_optimizer.run(conversion_rates, alpha_ratios, n_prod, graph_weights, user_index, group_list, feat_prob_mat)['expected_reward'])
             if len(group)>1:
-
         ###DOMANDA###
         #MA GREEDY OPTIMIZER MI RIESCE A TROVARE GLI EXPECTED REWARDS DEGLI SPLIT? IO HO SOLO I CONV RATE
-        
-        
-        
         return self.pmatrix
+    #feat prob max rimane così comìè sempre o cambia?
+    def split(self, simulinfo, feat_prob_mat, spfeature_list=[0,1]):
+        """"""
+        group_list=feature_matrix_to_list(self.list_matrix[2])
+        if len(spfeature_list)==2:
+            bertot=Greedy_optimizer.run(conversion_rates=simulinfo["conversion_rates"], alpha_ratios=simulinfo["alpha_ratios"], n_prod=simulinfo["n_prod"], group_list=groups, feat_prob_mat=feat_prob_mat)['expected_reward'] #DEPTH DIVENTA LIST
+             #bestexpreward without
+            
+            #generate matrix -> la salvo
+            #matrix to list
+            if 0 in spfeature_list:
+                gr0=feature_matrix_to_list(self.list_matrix[0]) 
+                ber00=Greedy_optimizer.run(conversion_rates=simulinfo["conversion_rates"], alpha_ratios=simulinfo["alpha_ratios"], n_prod=simulinfo["n_prod"], group_list=gr0[0], feat_prob_mat=feat_prob_mat)['expected_reward'] #bestexpreward without
+                ber01=Greedy_optimizer.run(conversion_rates=simulinfo["conversion_rates"], alpha_ratios=simulinfo["alpha_ratios"], n_prod=simulinfo["n_prod"], group_list=gr0[1], feat_prob_mat=feat_prob_mat)['expected_reward'] #bestexpreward without
+                update_split_matrix(0)
+            else:
+                ber00, ber01=0,0
+    
+            
+            if 1 in spfeature_list:
+                gr1=feature_matrix_to_list(self.list_matrix[1])
+                ber10=Greedy_optimizer.run(conversion_rates=simulinfo["conversion_rates"], alpha_ratios=simulinfo["alpha_ratios"], n_prod=simulinfo["n_prod"], group_list=gr1[0], feat_prob_mat=feat_prob_mat)['expected_reward'] #bestexpreward without
+                ber11=Greedy_optimizer.run(conversion_rates=simulinfo["conversion_rates"], alpha_ratios=simulinfo["alpha_ratios"], n_prod=simulinfo["n_prod"], group_list=gr1[1], feat_prob_mat=feat_prob_mat)['expected_reward'] #bestexpreward without
+                update_split_matrix(1)
+            else:
+                ber00,ber11=0,0
 
-    def explore(self, simulinfo, feat_prob_mat,branch=None, depth=0): #DEPTH DIVENTA LIST
-        """cvarray: è il vettore dei context value che ci servono quindi quello del branch 0, 
-                    del branch 1 e quello non splittato che corrisponde ai reward
-         branch: è il branch su cui continuo, devo capire come aggiornare la matrice in base a questa info"""
-        group_list=feature_matrix_to_list(self.pmatrix)
-        for group in group_list:
-            bertot=Greedy_optimizer.run(conversion_rates=simulinfo["conversion_rates"], alpha_ratios=alpha_ratios, n_prod=n_prod, group, feat_prob_mat)['expected_reward']
-            #best expected reward for the pmatrix
-            #initially group_list=[[00,01,10,11]] so bertot will be of len=1
-            I CAN GENERATE THE TWO POSSIBILE MATRICES -> THEN DECIDE 
-        if branch is None:
-            self.pmatrix[0,:] = max(self.pmatrix)+1
-        else:
-            self.pmatrix[0,branch] = max(self.pmatrix)+1
+            
+            cv1=ber00+ber01
+            cv2=ber10+ber11
+            feature_splitted=split(cv1,cv2,bertot)
 
-        group1=feature_matrix_to_list(self.pmatrix)
 
-        cvarray[0]=Greedy_optimizer.run(conversion_rates, alpha_ratios, n_prod, graph_weights, user_index, group1, feat_prob_mat)['expected_reward']
-        if branch is None:
-            self.pmatrix[:,0] = max(self.pmatrix)+1
-        else:
-            self.pmatrix[branch,0] = max(self.pmatrix)+1
 
-       self.feature=self.split(cvarray,bertot)
+            if feature_splitted==-1:
+                return self.list_matrix[2]
+            spfeature_list.remove('feature_splitted') #la seconda volta questa deve essere rimossa solo dopo aver fatto entrambi gli split
+            self.list_matrix[2]=self.list_matrix[feature_splitted]
+
+            return explore(simulinfo, feat_prob_mat=)
+        
+        if spfeature_list[0]==0:
+            bertot=ber00
+            gr=feature_matrix_to_list(self.list_matrix[spfeature_list])
+            #generate matrix -> la salvo
+            #matrix to list
+            ber0=Greedy_optimizer.run(conversion_rates=simulinfo["conversion_rates"], alpha_ratios=simulinfo["alpha_ratios"], n_prod=simulinfo["n_prod"], group_list=gr[0], feat_prob_mat=feat_prob_mat)['expected_reward'] #bestexpreward without
+            ber1=Greedy_optimizer.run(conversion_rates=simulinfo["conversion_rates"], alpha_ratios=simulinfo["alpha_ratios"], n_prod=simulinfo["n_prod"], group_list=gr[1], feat_prob_mat=feat_prob_mat)['expected_reward'] #bestexpreward without
+            #generate matrix -> la salvo
+            update_split_matrix(0)
+            cv1=ber0+ber1
+            feature_splitted=split(cv1,cv2,bertot)
+            if feature_splitted==-1:
+                return self.list_matrix[2]
+            spfeature_list.remove('feature_splitted')
+            self.list_matrix[2]=self.list_matrix[feature_splitted]
+
+
+
+        if branch==0:
+            #ho deciso su quale feature splittare ora devo selezionare il gruppo giusto
+            self.list_matrix[2]
+            update_split
+        spfeature_list.remove('1')
+
         if self.feature!=-1 and depth<2: # se anche la profondità è 2 allora finisco
                 #pmatrix is a np matrix
                 
@@ -75,6 +115,13 @@ class ContextGeneration():
                 self.explore( cvarray, 0, depth+1)
                 self.explore( cvarray, 1, depth+1) #memorizzo la feature scelta: esempio scelgo la feature 0 giovani/vecchi
         return 1 
+
+    def update_split_matrix(self, feature_to_split):
+            if feature_to_split is None:
+                self.list_matrix[feature_to_split][0,:] = max(self.list_matrix[feature_to_split])+1
+            else:
+                self.list_matrix[feature_to_split][0,feature_to_split] = max(self.list_matrix[feature_to_split])+1
+            return 1
 
     def generatecvarray(onversion_rates, alpha_ratios, n_prod, graph_weights, user_index, group_list, feat_prob_mat):
         for group in group_list:
@@ -92,16 +139,18 @@ class ContextGeneration():
     def lcb(self, data): #vale sia per i reward che per le probabilities
         return data.mean()-np.sqrt(np.log(self.confidence)/(2*data.count()))
 
-    def split(cvarray,rewtot): #lista di funzioni su cui posso fare split [0,1] [0] [1]
+    def split(cv0, cv1, rewtot): #lista di funzioni su cui posso fare split [0,1] [0] [1]
         #devo gestire la depth = 2
-        if (max(cvarray[0],cvarray[1])>=rewtot) :
-            if cvarray[0]>cvarray[1]:
+        if (max(cv0,cv1)>=rewtot) :
+            if cv0>cv1:
                 return 0
             else:
                 return 1
         return -1
 
-    
+    def partition(lst, size):
+        for i in range(0, len(lst), size):
+            yield lst[i : i+size]
 
         """"    #compute the lower bound of the 7 reward that I need
         rewards=df_rewards
