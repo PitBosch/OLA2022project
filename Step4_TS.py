@@ -26,7 +26,7 @@ class Step4_TS(Learner):
         # second row --> number of times user bought a specific product (for each product obviously)
         self.initial_n_prod_data = n_prod_data
         self.n_prod_data = n_prod_data.copy()
-        self.mean_prod_sold = n_prod_data[0]/n_prod_data[1]
+        # self.mean_prod_sold = n_prod_data[0]/n_prod_data[1]
         self.n_prod_list = []
 
     def sample_CR(self):
@@ -57,6 +57,13 @@ class Step4_TS(Learner):
         sampled_alpha /= np.sum(sampled_alpha)
         
         return sampled_alpha 
+    
+    def sample_n_prod(self):
+        # initialize the data structure to store the mean number of product sold for product
+        shape = self.n_prod_data[0]
+        scale = 1/self.n_prod_data[1]
+
+        return np.random.gamma(shape = shape, scale = scale)
 
     def update_parameters(self, simul_result, price_combination):
         """ Update beta parameters of arms selected (passed with price_combination) with respect 
@@ -85,7 +92,7 @@ class Step4_TS(Learner):
             # simply update the collected data on past purchases adding informations of the daily simulation and
             # compute the mean of the number of products sold for each product
             self.n_prod_data += estimated_n_prod_data
-            self.mean_prod_sold = self.n_prod_data[0]/self.n_prod_data[1]
+            #self.mean_prod_sold = self.n_prod_data[0]/self.n_prod_data[1]
 
     def iteration(self, daily_users):
         """ Method to execute a single iteration of the Thompson Sampling Algorithm. Objective: choose the right price_combination
@@ -94,8 +101,9 @@ class Step4_TS(Learner):
         # 1) Sample from Beta distributions the estimate for conversion rates and alpha ratios
         sampled_CR = self.sample_CR()
         sampled_alpha = self.sample_alpha()
+        sampled_n_prod = self.sample_n_prod()
         # 2) Run the Greedy optimizer and select the best combination  
-        opt_prices_combination = self.Greedy_opt.run(conversion_rates=[sampled_CR], alphas_ratio=[sampled_alpha], n_prod=[self.mean_prod_sold])["combination"]
+        opt_prices_combination = self.Greedy_opt.run(conversion_rates=[sampled_CR], alphas_ratio=[sampled_alpha], n_prod=[sampled_n_prod])["combination"]
         # 3) Fixed the prices for the day simulate the daily user iterations
         simulation_result = self.env.simulate_day(daily_users, opt_prices_combination, ["conversion_rates", "alpha_ratios", "products_sold"])
         # 4) Update Beta_parameters according to the simulation done
