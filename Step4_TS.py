@@ -126,7 +126,7 @@ class Step4_TS(Learner):
         self.beta_param_alpha = self.initial_beta_alpha.copy()
         # Set data to estimate number of product sold to initial data
         self.n_prod_data = self.initial_n_prod_data.copy()
-        self.mean_prod_sold = self.n_prod_data[0]/self.n_prod_data[1]
+        mean_prod_sold = self.n_prod_data[0]/self.n_prod_data[1]
 
         for i in range(n_round):
             # Do a single iteration of the TS, and store the price combination chosen in the iteration
@@ -146,4 +146,5 @@ class Step4_TS(Learner):
         b_alpha = self.beta_param_alpha[1,:]
         self.alpha_ratios_list.append(a_alpha/(a_alpha+b_alpha))
         # compute and append estimate of number of product sold for each product
-        self.n_prod_list.append(self.mean_prod_sold.copy())
+        mean_prod_sold = self.n_prod_data[0]/self.n_prod_data[1]
+        self.n_prod_list.append(mean_prod_sold)
