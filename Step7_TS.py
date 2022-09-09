@@ -11,7 +11,7 @@ class Step7_TS():
         # Greedy optimizer to decide the price combination each day
         self.Greedy_opt = Greedy_optimizer(self.env)
         # Optimal theoretical reward
-        self.opt_reward = env.optimal_reward(Disaggregated=True)[0]
+        self.opt_reward = np.sum(env.optimal_reward(Disaggregated=True)[0]*env.user_cat_prob)
         # Initialize history of theoretical rewards 
         self.reward_history = []
         # History of prices combination chosen
@@ -150,7 +150,7 @@ class Step7_TS():
         exp_rew = 0.
         feature_list = feature_matrix_to_list(self.context)
         for k, group_list in enumerate(feature_list):
-            exp_rew += self.env.expected_reward(price_combination=price_comb_list[k], group_list=group_list, feat_prob_mat=self.est_feat_prob_mat)
+            exp_rew += self.env.expected_reward(price_combination=price_comb_list[k], group_list=group_list)
 
         return exp_rew
         
@@ -163,10 +163,16 @@ class Step7_TS():
         self.context = np.array([[0,0],[0,0]])
         self.simul_history = copy.deepcopy(self.initial_simul_history)
         self.update_learner_list()
+        context_dict = {0: np.array([[0,0],[0,0]]),
+        1: np.array([[0,0],[1,1]]),
+        2: np.array([[0,1],[2,2]]),
+        3: np.array([[0,1],[2,3]]),}
         # A complete run of n_days, with context generation algorithm run every 2 weeks (14 days)
         for t in range(n_days):
             if t!=0 and t%14 == 0:
-                self.context = np.random.randint(0, 2, (2,2)) #################################### <-- CONTEXT GENERATION QUI BOSCHINIIIIIII
+                choice = np.random.randint(0,4)
+                new_context = context_dict[choice]
+                self.context = new_context.copy() #################################### <-- CONTEXT GENERATION QUI BOSCHINIIIIIII
                 self.update_learner_list()
                 context_list.append(self.context.copy())
             # Do a single iteration of the TS, and store the LIST of price combinations chosen for each group in the context
@@ -183,7 +189,7 @@ class Step7_TS():
             for k, learner in enumerate(self.learner_list):
                 learner.update_parameters(daily_info[k], opt_price_comb[k])
         # self.price_comb_history.append(price_comb_list.copy())
-        self.rewards_history.append(reward_list.copy())
+        self.reward_history.append(reward_list.copy())
         self.context_history.append(context_list.copy())
     
         return
