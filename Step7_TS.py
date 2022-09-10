@@ -5,13 +5,15 @@ from TS_context import *
 
 class Step7_TS():
 
-    def __init__(self, env: Environment, beta_CR, beta_alpha, n_prod_data) :
+    def __init__(self, env: Environment, beta_CR, beta_alpha, n_prod_data, learning_rate = 1.0) :
         # Real environment
         self.env = env
         # Greedy optimizer to decide the price combination each day
         self.Greedy_opt = Greedy_optimizer(self.env)
         # Optimal theoretical reward
         self.opt_reward = np.sum(env.optimal_reward(Disaggregated=True)[0]*env.user_cat_prob)
+        # Learning Rate
+        self.lr = learning_rate
         # Initialize history of theoretical rewards 
         self.reward_history = []
         # History of prices combination chosen
@@ -53,12 +55,12 @@ class Step7_TS():
         #
         self.learner_list = []
     
-    def param_info(self, k):
+    def param_info(self, group):
         a = np.ones((5,4))
         b = np.ones((5,4))
         beta_alpha = np.ones((2,5))
         n_prod_data = np.ones((2,5))
-        i_list,j_list = np.where(self.context == k)
+        i_list,j_list = np.where(self.context == group)
         for k in range(len(i_list)):
             feat1 = i_list[k]
             feat2 = j_list[k]
@@ -84,10 +86,10 @@ class Step7_TS():
         self.learner_list = []
         n_groups = np.max(self.context)+1
         feature_list = feature_matrix_to_list(self.context)
-        for k in range(n_groups):
-            CR_beta, alpha_beta, n_prod_info = self.param_info(k)
-            group_list = feature_list[k]
-            self.learner_list.append(TS_context(self.env, CR_beta, alpha_beta, n_prod_info, group_list))
+        for group in range(n_groups):
+            CR_beta, alpha_beta, n_prod_info = self.param_info(group)
+            group_list = feature_list[group]
+            self.learner_list.append(TS_context(self.env, CR_beta, alpha_beta, n_prod_info, group_list, self.lr))
         return
 
     def update_simul_history(self, daily_simul, price_comb_list):
@@ -150,7 +152,10 @@ class Step7_TS():
         exp_rew = 0.
         feature_list = feature_matrix_to_list(self.context)
         for k, group_list in enumerate(feature_list):
-            exp_rew += self.env.expected_reward(price_combination=price_comb_list[k], group_list=group_list)
+            # compute probability of the group:
+            group_prob = np.sum(compute_group_prob(group_list, self.env.feat_prob_matrix))
+            group_rew = self.env.expected_reward(price_combination=price_comb_list[k], group_list=group_list)
+            exp_rew += group_rew*group_prob
 
         return exp_rew
         
@@ -170,7 +175,8 @@ class Step7_TS():
         # A complete run of n_days, with context generation algorithm run every 2 weeks (14 days)
         for t in range(n_days):
             if t!=0 and t%14 == 0:
-                choice = np.random.randint(0,4)
+                #choice = np.random.randint(0,4) if t < 100 else 2
+                choice = 2
                 new_context = context_dict[choice]
                 self.context = new_context.copy() #################################### <-- CONTEXT GENERATION QUI BOSCHINIIIIIII
                 self.update_learner_list()

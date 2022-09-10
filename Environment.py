@@ -30,6 +30,8 @@ def feature_matrix_to_list(feat_mat):
     return feature_list
 
 def generate_users_prob(feat_matrix, feat_prob):
+    """ Starting from a matrix defining the context (feat_matrix) and a vector of probability for the event
+        feature_i = 1, generates a vector of probability to observe each type of user defined by the context"""
     feat_list = feature_matrix_to_list(feat_matrix)
     prob_list = []
     n_groups = np.max(feat_matrix)+1
@@ -44,9 +46,11 @@ def generate_users_prob(feat_matrix, feat_prob):
                 prob += p1*p2
             prob_list.append(prob)
     
-    return prob_list
+    return np.array(prob_list)
 
 def generate_feat_prob_matrix(feat_prob):
+    """ Starting from the probability of having feature_i = 1, generates the matrix containg the probability
+        of observing all of each couple values for the features"""
     feat_prob_matrix = np.zeros((2,2))
     for i in range(2):
         for j in range(2):
@@ -54,6 +58,16 @@ def generate_feat_prob_matrix(feat_prob):
             p2 = feat_prob[1] if j == 1 else 1-feat_prob[1]
             feat_prob_matrix[i,j] = p1*p2
     return feat_prob_matrix
+
+def compute_group_prob(group_list, feat_prob_mat):
+    """ Given a list of couple of values for the 2 features, and a matrix containing the probability of 
+        observing a couple of feature, returns the array of probability of all couples in group_list"""
+    prob_list = []
+    for feat_couple in group_list:
+        i,j = feat_couple
+        # Append the probability associated to the couple of features, according to feat_prob_mat
+        prob_list.append(feat_prob_mat[i,j])
+    return np.array(prob_list)
 
 class Environment:
     """Class containing all the parameters that characterize the problem, from the classes of users to the list of available products."""
@@ -677,19 +691,16 @@ class Environment:
         
         # STEP7 (CONTEXT GENERATION) CASE ONLY!
         if group_list is not None:
-            prob_list = []
-            for feat_couple in group_list:
-                # Adapt graph_weights to the specific case
-                i,j = feat_couple
-                if feat_prob_mat is None:
-                    # Retrieve theoretica values
-                    prob_list.append(self.feat_prob_matrix[i,j])
-                else:
-                    # Retrieve the frequency estimate of couple of features needed
-                    prob_list.append(feat_prob_mat[i,j])
+            # compute the array of probability of observing a couple of feature, for eache couple contained in group_list
+            if feat_prob_mat is None:
+                prob_list = compute_group_prob(group_list, self.feat_prob_matrix)
+            else :
+                prob_list = compute_group_prob(group_list, feat_prob_mat)
             # Compute the reward for each couple of features and weight the result for the corresponding probability
             for user_index in range(len(group_list)):
                 reward += prob_list[user_index]*self.user_reward(user_index, price_combination)
+            # Divide for the probability of observing the whole group
+            reward /= np.sum(prob_list)
         else:        
             # The default value for user_index is None, representing the case of aggregated demand curve
             if user_index is None :

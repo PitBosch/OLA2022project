@@ -1,11 +1,11 @@
 from Step4_TS import *
 
 class TS_context(Step4_TS):
-    def __init__(self, env, beta_CR, beta_alpha, n_prod_data, group_list):
+    def __init__(self, env, beta_CR, beta_alpha, n_prod_data, group_list, learning_rate = 1.0):
         self.group_list = group_list
         self.group_dim = len(self.group_list)
         # pass learning rate to the class
-        self.lr = 1.0
+        self.lr = learning_rate
         # CONVERSION RATES :
         # store informations about beta parameters and inizialize CR matrix to store estimate after a complete run
         self.initial_beta_CR = []
