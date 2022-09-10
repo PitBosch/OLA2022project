@@ -1,19 +1,18 @@
 
 # from ContextGeneration import ContextGeneration
+from ContextGeneration import ContextGeneration
 from Learner import *
 from TS_context import *
 
 class Step7_TS():
 
-    def __init__(self, env: Environment, beta_CR, beta_alpha, n_prod_data, learning_rate = 1.0) :
+    def __init__(self, env: Environment, beta_CR, beta_alpha, n_prod_data) :
         # Real environment
         self.env = env
         # Greedy optimizer to decide the price combination each day
         self.Greedy_opt = Greedy_optimizer(self.env)
         # Optimal theoretical reward
         self.opt_reward = np.sum(env.optimal_reward(Disaggregated=True)[0]*env.user_cat_prob)
-        # Learning Rate
-        self.lr = learning_rate
         # Initialize history of theoretical rewards 
         self.reward_history = []
         # History of prices combination chosen
@@ -47,7 +46,7 @@ class Step7_TS():
         self.initial_beta_alpha = beta_alpha.copy()             # Note beta_alpha is a 2x5 matrix (2 parameters, 5 products)
         # N PRODUCT SOLD
         # n_prod_data is a 2x5 matrix:
-        # first row --> number of product sold for a specific product in the simulations
+        # first row --> number of product sold for a specific product in the simulations-> what does that mean?
         # second row --> number of times user bought a specific product (for each product obviously)
         self.initial_n_prod_data = n_prod_data
         # self.mean_prod_sold = n_prod_data[0]/n_prod_data[1]
@@ -55,13 +54,18 @@ class Step7_TS():
         #
         self.learner_list = []
     
-    def param_info(self, group):
+    def param_info(self, k):
         a = np.ones((5,4))
         b = np.ones((5,4))
+        #initialize a, b to a 5x4
         beta_alpha = np.ones((2,5))
+        #initialize beta_alpha to a matrix 2x5 of ones
         n_prod_data = np.ones((2,5))
-        i_list,j_list = np.where(self.context == group)
+        #initialize n_prod_data to a matrix 2x5 of ones
+        i_list,j_list = np.where(self.context == k)
+        #find the i and j of the couple that belongs to the k-th group
         for k in range(len(i_list)):
+            #loop through the list
             feat1 = i_list[k]
             feat2 = j_list[k]
             feat_key = str(feat1)+str(feat2)
@@ -86,10 +90,10 @@ class Step7_TS():
         self.learner_list = []
         n_groups = np.max(self.context)+1
         feature_list = feature_matrix_to_list(self.context)
-        for group in range(n_groups):
-            CR_beta, alpha_beta, n_prod_info = self.param_info(group)
-            group_list = feature_list[group]
-            self.learner_list.append(TS_context(self.env, CR_beta, alpha_beta, n_prod_info, group_list, self.lr))
+        for k in range(n_groups):
+            CR_beta, alpha_beta, n_prod_info = self.param_info(k)
+            group_list = feature_list[k]
+            self.learner_list.append(TS_context(self.env, CR_beta, alpha_beta, n_prod_info, group_list))
         return
 
     def update_simul_history(self, daily_simul, price_comb_list):
@@ -152,10 +156,7 @@ class Step7_TS():
         exp_rew = 0.
         feature_list = feature_matrix_to_list(self.context)
         for k, group_list in enumerate(feature_list):
-            # compute probability of the group:
-            group_prob = np.sum(compute_group_prob(group_list, self.env.feat_prob_matrix))
-            group_rew = self.env.expected_reward(price_combination=price_comb_list[k], group_list=group_list)
-            exp_rew += group_rew*group_prob
+            exp_rew += self.env.expected_reward(price_combination=price_comb_list[k], group_list=group_list)
 
         return exp_rew
         
@@ -175,10 +176,10 @@ class Step7_TS():
         # A complete run of n_days, with context generation algorithm run every 2 weeks (14 days)
         for t in range(n_days):
             if t!=0 and t%14 == 0:
-                #choice = np.random.randint(0,4) if t < 100 else 2
-                choice = 2
-                new_context = context_dict[choice]
-                self.context = new_context.copy() #################################### <-- CONTEXT GENERATION QUI BOSCHINIIIIIII
+                #choice = np.random.randint(0,4)
+                #new_context = context_dict[choice]
+                # self.context = new_context.copy()
+                self.context = ContextGeneration(self.env).run(self.simul_history) #################################### <-- CONTEXT GENERATION QUI BOSCHINIIIIIII
                 self.update_learner_list()
                 context_list.append(self.context.copy())
             # Do a single iteration of the TS, and store the LIST of price combinations chosen for each group in the context
