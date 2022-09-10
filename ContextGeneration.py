@@ -18,15 +18,24 @@ class ContextGeneration():
         #matrix that helps us saving our 
 
     def run(self, simulinfo):
-        group_list=feature_matrix_to_list(self.pmatrix)
-        feat_prob=np.array[0.25,0.25]
+        group_list=feature_matrix_to_list(self.list_matrix[2])
+        n_userstot=0
+        print("miao")
+        #for keys in simulinfo["n_users"].keys():
+       #     n_userstot+=simulinfo["n_users"]
+        feat_prob=np.array([0.25,0.25])
         feat_prob_mat=generate_feat_prob_matrix(feat_prob) #NON HO CAPITO STA LINEA
-        self.get_group_k_info(simulinfo, 0)
-        self.bertot=Greedy_optimizer(self.env).run(conversion_rates=simulinfo["conversion_rates"], alpha_ratios=simulinfo["alpha_ratios"], n_prod=simulinfo["n_prod"], group_list=group_list[0], feat_prob_mat=feat_prob_mat)['expected_reward']
+        info=self.get_group_k_info(simulinfo, self.list_matrix[2],0)
+        #ho messo user index 01 poi ci penso
+        #self.bertot=Greedy_optimizer(self.env).run(conversion_rates=info[0][0], alphas_ratio=info[1][0], n_prod=info[2][0], user_index=1, group_list=group_list[0], feat_prob_mat=feat_prob_mat)['expected_reward']
+        CR_list = [info[0]]*1
+        alpha_list = [info[1]]*1 
+        n_prod_list = [info[2]]*1 
+        self.bertot=Greedy_optimizer(self.env).run(conversion_rates=CR_list, alphas_ratio=alpha_list, n_prod=n_prod_list, group_list=group_list[0], feat_prob_mat=feat_prob_mat)['expected_reward']
         #Find the best expected reward without split
         spfeature_list=[0,1]
         #initialize the list of features that have to be splitted
-        lista=self.split0(simulinfo,feat_prob_mat, spfeature_list)
+        lista=self.split0(simulinfo,feat_prob_mat)
         #split the first big group into two chunks
         fsp=lista[2]
         #the splitted feature is equal to this result
@@ -49,6 +58,7 @@ class ContextGeneration():
         gr0=feature_matrix_to_list(self.list_matrix[0])
         info=[self.get_group_k_info(simulinfo, 0),self.get_group_k_info(simulinfo, 1)]
         #not sure about 0 for every feature splitted
+        #QUI INFO è SEMPRE SBAGLIATO PERCHè DEVO PASSARE UNA LISSTA
         ber00=Greedy_optimizer.run(conversion_rates=info[0][0], alpha_ratios=info[0][1], n_prod=info[0][2], group_list=gr0[0], feat_prob_mat=feat_prob_mat)['expected_reward'] #bestexpreward without
         ber01=Greedy_optimizer.run(conversion_rates=info[1][0], alpha_ratios=info[1][1], n_prod=info[1][2], group_list=gr0[1], feat_prob_mat=feat_prob_mat)['expected_reward'] #bestexpreward without
         self.update_split_matrix(1)

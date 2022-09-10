@@ -1,3 +1,4 @@
+from tokenize import group
 from UserCat import *
 from Product import *
 import copy
@@ -697,7 +698,9 @@ class Environment:
             else :
                 prob_list = compute_group_prob(group_list, feat_prob_mat)
             # Compute the reward for each couple of features and weight the result for the corresponding probability
-            for user_index in range(len(group_list)):
+            length=0 if len(group_list)==4 else len(group_list)-1
+
+            for user_index in range(length):
                 reward += prob_list[user_index]*self.user_reward(user_index, price_combination)
             # Divide for the probability of observing the whole group
             reward /= np.sum(prob_list)

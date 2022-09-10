@@ -1,6 +1,6 @@
 
 # from ContextGeneration import ContextGeneration
-from ContextGeneration import ContextGeneration
+from ContextGeneration import *
 from Learner import *
 from TS_context import *
 
