@@ -94,9 +94,7 @@ class Step4_TS(Step3_TS):
         rewards = []
         price_comb = []
         # Set beta_parameters to initial values for conversion rates and alpha ratios
-        self.beta_param_CR = []
-        self.beta_param_CR.append(self.initial_beta_CR[0].copy())
-        self.beta_param_CR.append(self.initial_beta_CR[1].copy())
+        self.beta_param_CR = self.initial_beta_CR.copy()
         self.beta_param_alpha = self.initial_beta_alpha.copy()
         # Set data to estimate number of product sold to initial data
         self.n_prod_data = self.initial_n_prod_data.copy()
