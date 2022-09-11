@@ -37,7 +37,7 @@ class Step6_TS_sw(Step5_TS):
         rewards = []
         price_comb = []
         # Set beta_parameters to initial values for conversion rates and graph weights
-        self.beta_param_CR = self.initial_beta_CR[0].copy()
+        self.beta_param_CR = self.initial_beta_CR.copy()
         self.beta_param_gw = copy.deepcopy(self.initial_beta_gw)
         self.CR_data_history = []
 
