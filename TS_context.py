@@ -47,5 +47,5 @@ class TS_context(Step4_TS):
         n_prod_list = [sampled_n_prod]*self.group_dim  
         opt_prices_combination = self.Greedy_opt.run(conversion_rates=CR_list, alphas_ratio=alpha_list, n_prod=n_prod_list,
                                                         group_list = self.group_list, feat_prob_mat = est_feat_prob_mat)["combination"]
-        
+                                                        
         return opt_prices_combination
