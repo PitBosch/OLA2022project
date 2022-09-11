@@ -1,40 +1,18 @@
 from Learner import *
+from Step3_TS import Step3_TS
 
 
-class Step5_TS(Learner):
+class Step5_TS(Step3_TS):
 
     def __init__(self, env: Environment, beta_CR, beta_gw, learning_rate=1.):
         # call initializer of super class
-        super().__init__(env)
-        # pass learning rate to the class
-        self.lr = learning_rate
-        # CONVERSION RATES :
-        # store informations about beta parameters and inizialize CR matrix to store estimate after a complete run
-        self.initial_beta_CR = []
-        self.initial_beta_CR.append(beta_CR[0].copy()) # Note that beta_CR is a list of 2 matrix 5x4 
-        self.initial_beta_CR.append(beta_CR[1].copy()) # (2 parameters, 5 products, 4 possible prices)
-        self.beta_param_CR = self.initial_beta_CR
-        self.cr_matrix_list = []
+        super().__init__(env, beta_CR, learning_rate)
         # GRAPH WEIGHTS:
         # store informations about beta parameters and inizialize graph weights list to store estimate after a complete run
         # NOTE: beta_gw is a list of 2 matrices 5x2 (2 parameters, 5 products, 2 secondary)
-        self.initial_beta_gw = copy.deepcopy(beta_gw)         
-        self.beta_param_gw = copy.deepcopy(self.initial_beta_gw)
+        self.initial_beta_gw = beta_gw.copy()         
+        self.beta_param_gw = self.initial_beta_gw.copy()
         self.graph_weights_list = []
-
-    def sample_CR(self):
-        # initialize the data structure to store sampled conversion rates
-        sampled_CR = np.zeros((5, 4))
-
-        for prod_ind in range(5):
-            for price_ind in range(4):
-                # for each product and for each possible price per product
-                # sample the conversion rate from beta distributions
-                a = self.beta_param_CR[0][prod_ind, price_ind]
-                b = self.beta_param_CR[1][prod_ind, price_ind]
-                sampled_CR[prod_ind, price_ind] = np.random.beta(a, b)
-
-        return sampled_CR
 
     def sample_graph_weights(self):
         # initialize the data structure to store sampled alpha ratios
@@ -43,8 +21,8 @@ class Step5_TS(Learner):
         for prod_ind in range(5):
             for sec_ind in range(2):
                 # for each product sample the daily alpha from a beta
-                a = self.beta_param_gw[0][prod_ind, sec_ind]
-                b = self.beta_param_gw[1][prod_ind, sec_ind]
+                a = self.beta_param_gw[0, prod_ind, sec_ind]
+                b = self.beta_param_gw[1, prod_ind, sec_ind]
                 sampled_gw[prod_ind, sec_ind] = np.random.beta(a, b)
         
         # Generate the proability matrix of graph weigths according to sampled values
@@ -71,15 +49,9 @@ class Step5_TS(Learner):
         estimated_clicks = simul_result['clicks']
         estimated_visualizations = simul_result['visualizations']
 
+        super().update_parameters(estimated_CR, price_combination)
+
         for prod_ind in range(5):
-            # retrieve the price index for the considered product 
-            price_ind = price_combination[prod_ind]
-            # CONVERSION RATES:
-            # update beta parameters with the following procedure:
-            # a + number of purchase
-            # b + (number of time users saw product i - number of purchase)
-            self.beta_param_CR[0][prod_ind, price_ind] += self.lr*estimated_CR[0, prod_ind]
-            self.beta_param_CR[1][prod_ind, price_ind] += self.lr*(estimated_CR[1, prod_ind] - estimated_CR[0, prod_ind])
             for j, sec_ind in enumerate(list(self.env.secondary_dict.values())[prod_ind]):
                 # GRAPH WEIGHTS 
                 # update beta parameters with the following procedure:

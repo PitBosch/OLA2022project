@@ -10,10 +10,8 @@ class Step3_TS(Learner):
         self.lr = learning_rate
         # CONVERSION RATES :
         # store informations about beta parameters and inizialize CR matrix to store estimate
-        self.initial_beta = []
-        self.initial_beta.append(beta_parameters[0].copy())
-        self.initial_beta.append(beta_parameters[1].copy())
-        self.beta_parameters = []
+        self.initial_beta = beta_parameters.copy()
+        self.beta_parameters = self.initial_beta.copy()
         self.cr_matrix_list = []
 
     def sample_CR(self):
@@ -24,8 +22,8 @@ class Step3_TS(Learner):
             for price_ind in range(4):
                 # for each product and for each possible price per product
                 # sample the conversion rate from beta distributions
-                a = self.beta_parameters[0][prod_ind, price_ind]
-                b = self.beta_parameters[1][prod_ind, price_ind]
+                a = self.beta_parameters[0, prod_ind, price_ind]
+                b = self.beta_parameters[1, prod_ind, price_ind]
                 sampled_CR[prod_ind, price_ind] = np.random.beta(a, b)
 
         return sampled_CR

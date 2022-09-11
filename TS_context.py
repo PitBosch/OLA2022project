@@ -2,16 +2,14 @@ from Step4_TS import *
 
 class TS_context(Step4_TS):
     def __init__(self, env, beta_CR, beta_alpha, n_prod_data, group_list, learning_rate = 1.0):
-        self.group_list = group_list
+        self.group_list = group_list.copy()
         self.group_dim = len(self.group_list)
         # pass learning rate to the class
         self.lr = learning_rate
         # CONVERSION RATES :
         # store informations about beta parameters and inizialize CR matrix to store estimate after a complete run
-        self.initial_beta_CR = []
-        self.initial_beta_CR.append(beta_CR[0].copy()) # Note that beta_CR is a list of 2 matrix 5x4 
-        self.initial_beta_CR.append(beta_CR[1].copy()) # (2 parameters, 5 products, 4 possible prices)
-        self.beta_param_CR = self.initial_beta_CR
+        self.initial_beta_CR = beta_CR.copy()
+        self.beta_param_CR = self.initial_beta_CR.copy()
         self.cr_matrix_list = []
         # ALPHA RATIOS :
         # # store informations about beta parameters and inizialize alpha est to store estimate after a complete run

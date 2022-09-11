@@ -1,20 +1,12 @@
 from Learner import *
+from Step3_TS import Step3_TS
 
 
-class Step4_TS(Learner):
+class Step4_TS(Step3_TS):
 
     def __init__(self, env: Environment, beta_CR, beta_alpha, n_prod_data, learning_rate=1.):
         # call initializer of super class
-        super().__init__(env)
-        # pass learning rate to the class
-        self.lr = learning_rate
-        # CONVERSION RATES :
-        # store informations about beta parameters and inizialize CR matrix to store estimate after a complete run
-        self.initial_beta_CR = []
-        self.initial_beta_CR.append(beta_CR[0].copy()) # Note that beta_CR is a list of 2 matrix 5x4 
-        self.initial_beta_CR.append(beta_CR[1].copy()) # (2 parameters, 5 products, 4 possible prices)
-        self.beta_param_CR = self.initial_beta_CR
-        self.cr_matrix_list = []
+        super().__init__(env, beta_CR, learning_rate)
         # ALPHA RATIOS :
         # # store informations about beta parameters and inizialize alpha est to store estimate after a complete run
         self.initial_beta_alpha = beta_alpha.copy()             # Note beta_alpha is a 2x5 matrix (2 parameters, 5 products)
@@ -28,20 +20,6 @@ class Step4_TS(Learner):
         self.n_prod_data = n_prod_data.copy()
         # self.mean_prod_sold = n_prod_data[0]/n_prod_data[1]
         self.n_prod_list = []
-
-    def sample_CR(self):
-        # initialize the data structure to store sampled conversion rates
-        sampled_CR = np.zeros((5, 4))
-
-        for prod_ind in range(5):
-            for price_ind in range(4):
-                # for each product and for each possible price per product
-                # sample the conversion rate from beta distributions
-                a = self.beta_param_CR[0][prod_ind, price_ind]
-                b = self.beta_param_CR[1][prod_ind, price_ind]
-                sampled_CR[prod_ind, price_ind] = np.random.beta(a, b)
-
-        return sampled_CR
 
     def sample_alpha(self):
         # initialize the data structure to store sampled alpha ratios
@@ -73,15 +51,11 @@ class Step4_TS(Learner):
         estimated_alpha = simul_result['initial_prod']
         estimated_n_prod_data = simul_result['n_prod_sold']
 
+        super().update_parameters(estimated_CR, price_combination)
+
         for prod_ind in range(5):
             # retrieve the price index for the considered product 
             price_ind = price_combination[prod_ind]
-            # CONVERSION RATES:
-            # update beta parameters with the following procedure:
-            # a + number of purchase
-            # b + (number of time users saw product i - number of purchase)
-            self.beta_param_CR[0][prod_ind, price_ind] += self.lr*estimated_CR[0, prod_ind]
-            self.beta_param_CR[1][prod_ind, price_ind] += self.lr*(estimated_CR[1, prod_ind] - estimated_CR[0, prod_ind])
             # ALPHA RATIOS
             # update beta parameters with the following procedure:
             # a + number of times product i was the initial product

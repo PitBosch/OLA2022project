@@ -1,4 +1,3 @@
-from tokenize import group
 from UserCat import *
 from Product import *
 import copy
@@ -261,15 +260,15 @@ class Environment:
             # FEATURE 1 SAMPLE
             feat1 = np.random.binomial(1, self.feature_prob[0])
             # FEATURE 2 SAMPLE
-            feat2 = np.random.binomial(1, self.feature_prob[0])
+            feat2 = np.random.binomial(1, self.feature_prob[1])
             # Retrieve right key to access to_sava_data according to features sampled
             feat_key = str(feat1)+str(feat2)
             # Increase number of users appeared for the couple of features
             to_save_data[feat_key]['n_users'] += 1
             # user category
             feat_ind = [int(feat1), int(feat2)]
-            user_ind = int(self.feature_matrix[feat_ind[0]][feat_ind[1]])
-            comb_ind = int(context_matrix[feat_ind[0]][feat_ind[1]])
+            user_ind = int(self.feature_matrix[feat_ind[0], feat_ind[1]])
+            comb_ind = int(context_matrix[feat_ind[0], feat_ind[1]])
             # we increment the daily profit of the website by the profit done with the simulated user
             self.execute(self.users[user_ind], price_combination_list[comb_ind], to_save_data[feat_key])
             # notice that we have passed only the dictionary for the specific user category sampled
@@ -688,20 +687,17 @@ class Environment:
 
         # if in the environment we have only 1 user we simply return the single_reward linked to the user
         if len(self.users) == 1:
-            reward = self.user_reward(0, price_combination)
+            return self.user_reward(0, price_combination)
         
-        # STEP7 (CONTEXT GENERATION) CASE ONLY!
-        if group_list is not None:
+        if group_list is not None: # STEP7 (CONTEXT GENERATION) CASE ONLY!
             # compute the array of probability of observing a couple of feature, for eache couple contained in group_list
             if feat_prob_mat is None:
                 prob_list = compute_group_prob(group_list, self.feat_prob_matrix)
             else :
                 prob_list = compute_group_prob(group_list, feat_prob_mat)
             # Compute the reward for each couple of features and weight the result for the corresponding probability
-            length=0 if len(group_list)==4 else len(group_list)-1
-
-            for user_index in range(length):
-                reward += prob_list[user_index]*self.user_reward(user_index, price_combination)
+            for user_i in range(len(group_list)):
+                reward += prob_list[user_i]*self.user_reward(user_i, price_combination)
             # Divide for the probability of observing the whole group
             reward /= np.sum(prob_list)
         else:        
@@ -718,10 +714,17 @@ class Environment:
             
         return reward
 
-    def optimal_reward(self, user_index=None, Disaggregated = False):
+    def optimal_reward(self, user_index = None, Disaggregated = False):
 
         """This method explores all the possible combination with a brute force approach to determine which is the price combination
             that returns the highest expected reward. It returns both the optimal price combination and optimal expected reward"""
+        if Disaggregated :
+            rewards_list = np.zeros(len(self.users))
+            opt_combination_list = [[]]*3
+            for i in range(len(self.users)) :
+                rewards_list[i], opt_combination_list[i] = self.optimal_reward(user_index = i)
+            return rewards_list, opt_combination_list
+        
         optimal_combination = [0, 0, 0, 0, 0]
         reward_max = 0.
         reward = 0.
@@ -733,13 +736,6 @@ class Environment:
                     for i4 in range(4):
                         for i5 in range(4):
                             possible_combinations.append([i1, i2, i3, i4, i5])
-
-        if Disaggregated :
-            rewards_list = np.zeros(len(self.users))
-            opt_combination_list = [[]]*3
-            for i in range(len(self.users)) :
-                rewards_list[i], opt_combination_list[i] = self.optimal_reward(user_index = i)
-            return rewards_list, opt_combination_list
 
         for price_combination in possible_combinations:
             # compute the reward for the price combination considered
