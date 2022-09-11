@@ -193,9 +193,9 @@ class Step7_TS():
         3: np.array([[0,1],[2,3]]),}
         # A complete run of n_days, with context generation algorithm run every 2 weeks (14 days)
         for t in range(n_days):
-            if t == 100:
-                #context_prob = [0.25, 0.25, 0.25, 0.25] if t < 100 else [0.05, 0.1, 0.8, 0.05]
-                choice = 2#np.random.choice([0,1,2,3], p = context_prob)
+            if t%14 and t!= 0:
+                context_prob = [0.25, 0.25, 0.25, 0.25] if t < 100 else [0.05, 0.1, 0.8, 0.05]
+                choice = np.random.choice([0,1,2,3], p = context_prob)
                 new_context = context_dict[choice]
                 self.context = new_context.copy() #################################### <-- CONTEXT GENERATION QUI BOSCHINIIIIIII
                 self.update_learner_list()
