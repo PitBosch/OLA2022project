@@ -87,10 +87,8 @@ class Step5_TS(Step3_TS):
         rewards = []
         price_comb = []
         # Set beta_parameters to initial values for conversion rates and graph weights
-        self.beta_param_CR = []
-        self.beta_param_CR.append(self.initial_beta_CR[0].copy())
-        self.beta_param_CR.append(self.initial_beta_CR[1].copy())
-        self.beta_param_gw = copy.deepcopy(self.initial_beta_gw)
+        self.beta_param_CR = self.initial_beta_CR.copy()
+        self.beta_param_gw = self.initial_beta_gw.copy()
 
         for i in range(n_round):
             # Do a single iteration of the TS, and store the price combination chosen in the iteration

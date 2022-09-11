@@ -3,15 +3,15 @@ from Learner import *
 
 class Step3_TS(Learner):
 
-    def __init__(self, env: Environment, beta_parameters, learning_rate=1.):
+    def __init__(self, env: Environment, beta_CR, learning_rate=1.):
         # call initializer of super class
         super().__init__(env)
         # pass learning rate to the class
         self.lr = learning_rate
         # CONVERSION RATES :
         # store informations about beta parameters and inizialize CR matrix to store estimate
-        self.initial_beta = beta_parameters.copy()
-        self.beta_parameters = self.initial_beta.copy()
+        self.initial_beta_CR = beta_CR.copy()
+        self.beta_param_CR = self.initial_beta_CR.copy()
         self.cr_matrix_list = []
 
     def sample_CR(self):
@@ -22,8 +22,8 @@ class Step3_TS(Learner):
             for price_ind in range(4):
                 # for each product and for each possible price per product
                 # sample the conversion rate from beta distributions
-                a = self.beta_parameters[0, prod_ind, price_ind]
-                b = self.beta_parameters[1, prod_ind, price_ind]
+                a = self.beta_param_CR[0, prod_ind, price_ind]
+                b = self.beta_param_CR[1, prod_ind, price_ind]
                 sampled_CR[prod_ind, price_ind] = np.random.beta(a, b)
 
         return sampled_CR
@@ -39,8 +39,8 @@ class Step3_TS(Learner):
             # update beta parameters with the following procedure:
             # a + number of purchase
             # b + (number of time users saw product i - number of purchase)
-            self.beta_parameters[0][prod_ind, price_ind] += self.lr*estimated_CR[0, prod_ind]
-            self.beta_parameters[1][prod_ind, price_ind] += self.lr*(estimated_CR[1, prod_ind] - estimated_CR[0, prod_ind])
+            self.beta_param_CR[0][prod_ind, price_ind] += self.lr*estimated_CR[0, prod_ind]
+            self.beta_param_CR[1][prod_ind, price_ind] += self.lr*(estimated_CR[1, prod_ind] - estimated_CR[0, prod_ind])
 
     def iteration(self, daily_users):
         """ Method to execute a single iteration of the Thompson Sampling Algorithm. Objective: choose the right price_combination
@@ -66,9 +66,7 @@ class Step3_TS(Learner):
         rewards = []
         price_comb = []
         # Set beta_parameters to initial values
-        self.beta_parameters = []
-        self.beta_parameters.append(self.initial_beta[0].copy())
-        self.beta_parameters.append(self.initial_beta[1].copy())
+        self.beta_param_CR = self.initial_beta_CR.copy()
         for i in range(n_round):
             # Do a single iteration of the TS, and store the price combination chosen in the iteration
             opt_price_comb = self.iteration(daily_users)
@@ -79,6 +77,6 @@ class Step3_TS(Learner):
         # append the list of price combinations selected through the run
         self.price_comb_history.append(price_comb)
         # compute and append the matrix of conversion rates estimate after the run
-        A = self.beta_parameters[0]
-        B = self.beta_parameters[1]
+        A = self.beta_param_CR[0]
+        B = self.beta_param_CR[1]
         self.cr_matrix_list.append(A/(A+B))
