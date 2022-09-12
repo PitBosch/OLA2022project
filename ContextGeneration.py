@@ -42,8 +42,8 @@ class ContextGeneration():
         cr, alpha, n_prod, p = self.get_group_info(group_list)
         opt_rew = self.greedy.run(conversion_rates=[cr]*dim, alphas_ratio=[alpha]*dim, n_prod=[n_prod]*dim,
                                         group_list=group_list, feat_prob_mat=self.est_feat_prob_mat)['expected_reward']
-        #p_lcb = p if p == 1 else self.lcb(p,group_list)
-        p_lcb = self.lcb(p,group_list)
+        p_lcb = p if p == 1 else self.lcb(p,group_list)
+        #p_lcb = self.lcb(p,group_list)
         cv = p_lcb*self.lcb(opt_rew, group_list)
         return cv
 

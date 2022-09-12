@@ -14,17 +14,20 @@ class Cusum:
 
     def update(self, sample: float) -> bool :
         """ Takes a 1d sample and return True if a detection was flagged """
-        self.t += 1
+        change_detected = False
         if self.t <= self.M:
             self.reference += sample/self.M
-            return False
         else:
             self.reference = (self.reference*(self.t-1) + sample)/self.t
             s_plus = (sample - self.reference) - self.eps
             s_minus = -(sample - self.reference) - self.eps
             self.g_plus = max(0, self.g_plus + s_plus)
             self.g_minus = max(0, self.g_minus + s_minus)
-            return self.g_plus > self.h or self.g_minus > self.h
+            cahnge_detected = self.g_plus > self.h or self.g_minus > self.h
+        # update time t
+        self.t += 1
+
+        return cahnge_detected
     def reset(self, change_t):
         """ Reset all the relevant variable"""  
         self.last_change_t = change_t

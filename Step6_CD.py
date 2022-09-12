@@ -77,7 +77,6 @@ class Step6_CD(step5_ucb1):
                 for price_i in range(4):
                     self.CD_matrix[prod_ind][price_i].reset(self.t)
                     self.reset_cr_info(prod_ind, price_i)
-                print('Cambiamento fatto per prodotto %d ' %(prod_ind))
         self.cr_info[0, np.arange(5), arms_pulled ] += cr_data[0]
         self.cr_info[1, np.arange(5), arms_pulled ] += cr_data[1]
         # CONVERSION RATES UPDATE
