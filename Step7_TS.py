@@ -69,6 +69,8 @@ class Step7_TS():
         self.initial_n_prod_data = n_prod_data
 
     def param_info(self, group):
+        """ Retrieve information about parameters to be estimate for the requested group.
+            group : int, number of the group we want information about """
         a = np.zeros((5,4))
         b = np.zeros((5,4))
         initial_prod = np.zeros(5)
@@ -82,11 +84,13 @@ class Step7_TS():
             b += self.simul_history[feat_key]['CR_seen'] - self.simul_history[feat_key]['CR_bought']
             initial_prod += self.simul_history[feat_key]['initial_prod']
             n_prod_data += self.simul_history[feat_key]['n_prod_sold']
+
         beta_CR = np.array([a, b])
         
         return beta_CR, initial_prod, n_prod_data
 
     def update_feat_prob_mat(self):
+        """ Update the matrix containing the relative frequency of each couple of features """
         M = np.zeros((2,2))
         for key in self.simul_history.keys():
             i = int(key[0])
@@ -96,20 +100,29 @@ class Step7_TS():
         self.est_feat_prob_mat = M/np.sum(M)    
 
     def update_learner_list(self):
+        """ Every time the context generation algorithm is run we have to initialize a list
+            of learner, containing a learner for each group of the context generated.
+            Learners must be fed with right information given by feature list"""
         self.learner_list = []
         n_groups = np.max(self.context)+1
         feature_list = feature_matrix_to_list(self.context)
         for group in range(n_groups):
             CR_beta, initial_prod, n_prod_info = self.param_info(group)
-            # initialization for alpha ratios' beta parameters must be retrieved by initial prod
+            # Once we have collected the informations stored in simul history we must sum the a priori
+            # assumptions contained in initial values for parameter. This is needed to guarantee some exploration
+            # alpha ratio
             n_users = np.sum(initial_prod)
             alpha_beta = np.zeros((2,5))
             alpha_beta[0] += initial_prod
             alpha_beta[1] += n_users - initial_prod
-            group_list = feature_list[group]
+            # conversion rates
             CR_beta += self.initial_beta_CR
             alpha_beta += self.initial_beta_alpha
+            # number of product sold
             n_prod_info += self.initial_n_prod_data
+            # specific group list
+            group_list = feature_list[group]
+            # initialize and append new learner
             self.learner_list.append(TS_context(self.env, CR_beta, alpha_beta, n_prod_info, group_list, self.lr))
         return
 
@@ -137,7 +150,8 @@ class Step7_TS():
         return
     
     def compute_info(self, simul):
-        """ Method that aggregates the informations obtained by the simulation"""
+        """ Method that aggregates the informations obtained by the simulation fror the groups defined
+            by the current context """
         info_list = []
         n_groups = np.max(self.context)+1
         for group in range(n_groups):
@@ -191,7 +205,7 @@ class Step7_TS():
         self.update_learner_list()
         # A complete run of n_days, with context generation algorithm run every 2 weeks (14 days)
         for t in range(n_days):
-            if t%14 and t!= 0:
+            if t%14 == 0 and t!= 0:
                 self.context_generator.update_history(self.simul_history, self.est_feat_prob_mat)
                 self.context = self.context_generator.run()
                 self.update_learner_list()

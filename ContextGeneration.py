@@ -32,19 +32,23 @@ class ContextGeneration():
         self.initial_n_prod_data = n_prod_data
     
     def update_history(self, simul_hist, feat_prob_mat):
+        """ Receive information about simul history and observed probabilities for the couple of features"""
         self.simul_history = simul_hist
         self.est_feat_prob_mat = feat_prob_mat
 
     def context_value(self, group_list):
+        """ compute the product between probability's lower bound and optimal reward lower bound """
         dim = len(group_list)
         cr, alpha, n_prod, p = self.get_group_info(group_list)
         opt_rew = self.greedy.run(conversion_rates=[cr]*dim, alphas_ratio=[alpha]*dim, n_prod=[n_prod]*dim,
                                         group_list=group_list, feat_prob_mat=self.est_feat_prob_mat)['expected_reward']
-        p_lcb = p if p == 1 else self.lcb(p,group_list)
+        #p_lcb = p if p == 1 else self.lcb(p,group_list)
+        p_lcb = self.lcb(p,group_list)
         cv = p_lcb*self.lcb(opt_rew, group_list)
         return cv
 
     def lcb(self, data, group_list): #vale sia per i reward che per le probabilities
+        """ Method to compute lower bound to compute context value"""
         # compute the number of users observed for the tested group
         n_data = 0
         for feat_couple in group_list:
@@ -57,6 +61,8 @@ class ContextGeneration():
         return max(0, data - np.sqrt(-np.log(self.confidence)/(2*n_data)))
 
     def get_group_info(self, group_list):
+        """ Given a group list (i.e. a list of couple of feature values describing the users) returns all
+            estimates for uncertain parameters for that specific group """
         #initialize bought an seen structure
         bought = np.zeros((5,4))
         seen = np.zeros((5,4))
@@ -90,6 +96,7 @@ class ContextGeneration():
         return cr_est, alpha_est, n_prod_est, prob_est
 
     def run(self):
+        """ Generate a new context based on last informations available """
         # Initial context is always all users in same group
         context = np.array([[0,0],[0,0]])
         # At first I can split on both the features
