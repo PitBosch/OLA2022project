@@ -1,167 +1,137 @@
-from curses import KEY_A1
-from importlib.util import spec_from_file_location
 from Environment import *
 from Greedy_optimizer import *
 import numpy as np
 from Step7_TS import *
+
 class ContextGeneration():
     #What we need to do is to evaluate every possible partition of the space of the features, 
     #and for every one of these we need to evaluate whether partitioning is better than not doing that
-    def __init__(self, env: Environment):
-        self.env=env
+    def __init__(self, env: Environment, confidence, simul_history, est_feat_prob_mat,beta_CR, beta_alpha, n_prod_data, learning_rate = 1.0):
         # Real environment
-        self.confidence=0.95
+        self.env = env
+        # Greedy Optimizer to compute optimal reward
+        self.greedy = Greedy_optimizer(self.env)
         #confidence for lower confidence bound
-        self.bertot=0
-        #best expected reward initialized to 0 but that has to be fixed
-        self.list_matrix=[np.array([[0,0],[0,0]]),np.array([[0,0],[0,0]]),np.array([[0,0],[0,0]])]#la prima pmatrix che passo è una matrice di o di zeri o di uno 
-        #matrix that helps us saving our 
-
-    def run(self, simulinfo):
-        group_list=feature_matrix_to_list(self.list_matrix[2])
-        n_userstot=0
-        print("miao")
-        #for keys in simulinfo["n_users"].keys():
-       #     n_userstot+=simulinfo["n_users"]
-        feat_prob=np.array([0.25,0.25])
-        feat_prob_mat=generate_feat_prob_matrix(feat_prob) #NON HO CAPITO STA LINEA
-        info=self.get_group_k_info(simulinfo, self.list_matrix[2],0)
-        #ho messo user index 01 poi ci penso
-        #self.bertot=Greedy_optimizer(self.env).run(conversion_rates=info[0][0], alphas_ratio=info[1][0], n_prod=info[2][0], user_index=1, group_list=group_list[0], feat_prob_mat=feat_prob_mat)['expected_reward']
-        CR_list = [info[0]]*1
-        alpha_list = [info[1]]*1 
-        n_prod_list = [info[2]]*1 
-        self.bertot=Greedy_optimizer(self.env).run(conversion_rates=CR_list, alphas_ratio=alpha_list, n_prod=n_prod_list, group_list=group_list[0], feat_prob_mat=feat_prob_mat)['expected_reward']
-        #Find the best expected reward without split
-        spfeature_list=[0,1]
-        #initialize the list of features that have to be splitted
-        lista=self.split0(simulinfo,feat_prob_mat)
-        #split the first big group into two chunks
-        fsp=lista[2]
-        #the splitted feature is equal to this result
-        if fsp==-1:
-        #If the split is not made return the matrix
-            return self.list_matrix[2]
-        spfeature_list.remove(fsp)
-        #Remove from the feature list the feature on which we have splitted
-        self.split1(simulinfo, feat_prob_mat, spfeature_list,0, lista[0])
-        #split on the first branch
-        self.split1(simulinfo, feat_prob_mat, spfeature_list,1, lista[1])
-        #split on the second branch
-        return self.list_matrix[2]
-        #return the final matrix
-
-    def split0(self, simulinfo, feat_prob_mat):
-        """function that split the tree in the first step"""
-        p=feat_prob_mat
-        self.update_split_matrix(0)
-        gr0=feature_matrix_to_list(self.list_matrix[0])
-        info=[self.get_group_k_info(simulinfo, 0),self.get_group_k_info(simulinfo, 1)]
-        #not sure about 0 for every feature splitted
-        #QUI INFO è SEMPRE SBAGLIATO PERCHè DEVO PASSARE UNA LISSTA
-        ber00=Greedy_optimizer.run(conversion_rates=info[0][0], alpha_ratios=info[0][1], n_prod=info[0][2], group_list=gr0[0], feat_prob_mat=feat_prob_mat)['expected_reward'] #bestexpreward without
-        ber01=Greedy_optimizer.run(conversion_rates=info[1][0], alpha_ratios=info[1][1], n_prod=info[1][2], group_list=gr0[1], feat_prob_mat=feat_prob_mat)['expected_reward'] #bestexpreward without
-        self.update_split_matrix(1)
-        info1=self.get_group_k_info(simulinfo,1)
-        gr1=feature_matrix_to_list(self.list_matrix[1])
-        ber10=Greedy_optimizer.run(conversion_rates=info1[0][0], alpha_ratios=info1[0][1], n_prod=info1[0][2], group_list=gr1[0], feat_prob_mat=feat_prob_mat)['expected_reward'] #bestexpreward without
-        ber11=Greedy_optimizer.run(conversion_rates=info1[1][0], alpha_ratios=info1[1][1], n_prod=info1[1][2],  group_list=gr1[1], feat_prob_mat=feat_prob_mat)['expected_reward'] #bestexpreward without
-        #run the greedy optimizer in order to find the ber
-        cv1=self.contextvalue(np.array(ber00,ber01), np.array(p[0,0],p[0,1]))
-        #calcolo context value feature 1 -> posso farla diventare una funzione prendendo anche quello sopra
-        cv2=self.contextvalue(np.array(ber10,ber11), np.array(p[1,0],p[1,1]))
-        #calcolo context value feature 2
-        feature_splitted=self.compare(cv1,cv2,self.bertot)
-        #compara i 3 context value
-        if feature_splitted!=-1:
-            self.list_matrix[0],self.list_matrix[1],self.list_matrix[2]=self.list_matrix[feature_splitted]
-        #if there's no split update all the matrix in the matrix list
-            if feature_splitted == 0:
-                return [ber00, ber01, feature_splitted]
-            elif feature_splitted==1:
-                return [ber10, ber11, feature_splitted]
-        return [0,0,feature_splitted] 
-        #restituisco su quale feature ho splittato e il nuovo bertot, sulla matrice ho già fatto l'update
-
-
-    def split1(self, simulinfo, feat_prob, spfeature_list,branch, ber):
-        """function that split the tree in the second step"""
-        
-        #convert the matrix to group_list
-        #
-        #select only the groups that have more than 1 couples
-        self.update_split_matrix(spfeature_list[0], branch) #splitto sulla feature che mi manca sul branch 0
-        #CONTROLLA CON CARTA E PENNA BENE SE FUNZIONA L'UPDATE
-        feat_prob_mat=generate_feat_prob_matrix(feat_prob)
-        group_list=feature_matrix_to_list(self.list_matrix[spfeature_list[0]])  
-        #convert the matrix to a group list
-        gr1=list(filter(lambda x: len(x) == 1, group_list))
-        #get only the groups that have length one (this works only for the second step not for the third)
-        gr=list(filter(lambda x: x[abs(1-spfeature_list[0])]==branch, gr1))
-        #get only the groups that have in the position of the feature splitted the actual branch
-        #qua basta convertire le couple in stringhe ed è fatta
-        key0=str(gr[0])
-        key1=str(gr[1])
-        ber0=Greedy_optimizer.run(conversion_rates=simulinfo["conversion_rates"][key0], alpha_ratios=simulinfo["alpha_ratios"][key0], n_prod=simulinfo["n_prod"][key0], group_list=gr[0], feat_prob_mat=feat_prob_mat)['expected_reward'] #bestexpreward without
-        ber1=Greedy_optimizer.run(conversion_rates=simulinfo["conversion_rates"][key1], alpha_ratios=simulinfo["alpha_ratios"][key1], n_prod=simulinfo["n_prod"][key1], group_list=gr[1], feat_prob_mat=feat_prob_mat)['expected_reward'] #bestexpreward without
-        #run the greedy optimizer to find the best expected reward
-        p0=0.25
-        p1=0.25
-
-        cv1=self.contextvalue(np.array(ber0,ber1), np.array(p0,p1))
-        #The context value of the first feature is computed as the sum of the other two
-        feature_splitted=self.compare(cv1,0,ber)
-        if feature_splitted!=-1:
-            self.list_matrix[2]=self.list_matrix[feature_splitted]
-        return feature_splitted #restituisco su quale feature ho splittato e il nuovo bertot, sulla matrice ho già fatto l'update
-        
-
-#DOMANDE: LOW CONFIDENCE BOUND AND PROBABILITIES
-
-    def update_split_matrix(self, feature_to_split, branch=0):
-            if feature_to_split is None:
-                self.list_matrix[feature_to_split][branch,:] = max(self.list_matrix[feature_to_split])+1
-            else:
-                self.list_matrix[feature_to_split][branch,feature_to_split] = max(self.list_matrix[feature_to_split])+1
-            return 1
-
-    def contextvalue(self, probs, rews):
-        return np.dot(self.lcb(probs), self.lcb(rews))
-
-    def lcb(self, data): #vale sia per i reward che per le probabilities
-        return data.mean()-np.sqrt(np.log(self.confidence)/(2*data.count()))
-
-    def compare(cv0, cv1, rewtot): #lista di funzioni su cui posso fare split [0,1] [0] [1]
-        #devo gestire la depth = 2
-        if (max(cv0,cv1)>=rewtot) :
-            if cv0>cv1:
-                return 0
-            else:
-                return 1
-        return -1
-
-    def get_group_k_info(self, simul_history, matrix, k):
-        a = np.ones((5,4))
-        b = np.ones((5,4))
-        #initialize a, b to a 5x4
-        beta_alpha = np.ones((2,5))
-        #initialize beta_alpha to a matrix 2x5 of ones
-        n_prod_data = np.ones((2,5))
-        #initialize n_prod_data to a matrix 2x5 of ones
-        i_list,j_list = np.where(matrix == k)
-        #find the i and j of the couple that belongs to the k-th group
-        for k in range(len(i_list)):
-            #loop through the list
-            feat1 = i_list[k]
-            feat2 = j_list[k]
-            feat_key = str(feat1)+str(feat2)
-            a += simul_history[feat_key]['CR_bought']
-            b += simul_history[feat_key]['CR_seen'] - simul_history[feat_key]['CR_bought']
-            beta_alpha += simul_history[feat_key]['initial_prod']
-            n_prod_data += simul_history[feat_key]['n_prod_sold']
-        beta_CR = [a, b]
-        
-        return [beta_CR, beta_alpha, n_prod_data]
+        self.confidence = confidence
+        # simulation history 
+        self.simul_history = simul_history
+        # estimate of the probability to observe a couple of feature 
+        self.est_feat_prob_mat = est_feat_prob_mat
+        # learning rate
+        self.lr = learning_rate
+        # CONVERSION RATES :
+        # store informations about beta parameters and inizialize CR matrix to store estimate after a complete run
+        self.initial_beta_CR = beta_CR.copy()
+        # ALPHA RATIOS :
+        # # store informations about beta parameters and inizialize alpha est to store estimate after a complete run
+        self.initial_beta_alpha = beta_alpha.copy()             # Note beta_alpha is a 2x5 matrix (2 parameters, 5 products)
+        # N PRODUCT SOLD
+        # n_prod_data is a 2x5 matrix:
+        # first row --> number of product sold for a specific product in the simulations
+        # second row --> number of times user bought a specific product (for each product obviously)
+        self.initial_n_prod_data = n_prod_data
     
+    def update_history(self, simul_hist, feat_prob_mat):
+        self.simul_history = simul_hist
+        self.est_feat_prob_mat = feat_prob_mat
 
-   
+    def context_value(self, group_list):
+        dim = len(group_list)
+        cr, alpha, n_prod, p = self.get_group_info(group_list)
+        opt_rew = self.greedy.run(conversion_rates=[cr]*dim, alphas_ratio=[alpha]*dim, n_prod=[n_prod]*dim,
+                                        group_list=group_list, feat_prob_mat=self.est_feat_prob_mat)['expected_reward']
+        p_lcb = p if p == 1 else self.lcb(p,group_list)
+        cv = p_lcb*self.lcb(opt_rew, group_list)
+        return cv
+
+    def lcb(self, data, group_list): #vale sia per i reward che per le probabilities
+        # compute the number of users observed for the tested group
+        n_data = 0
+        for feat_couple in group_list:
+            i = feat_couple[0]
+            j = feat_couple[1]
+            feat_key = str(i)+str(j)
+            n_data += self.simul_history[feat_key]['n_users']
+        n_data = n_data * self.lr
+        # return the lower confidence bound for the datum analyzed
+        return max(0, data - np.sqrt(-np.log(self.confidence)/(2*n_data)))
+
+    def get_group_info(self, group_list):
+        #initialize bought an seen structure
+        bought = np.zeros((5,4))
+        seen = np.zeros((5,4))
+        #initialize n_prod to an empty array of dim 5
+        initial_prod = np.zeros(5)
+        #initialize n_prod_data to a matrix 2x5 of zeros
+        n_prod_data = np.zeros((2,5))
+        # initialize prob estimate to 0.
+        prob_est = 0.
+        
+        for feat_couple in group_list:
+            #loop through the list
+            feat1, feat2 = feat_couple
+            feat_key = str(feat1)+str(feat2)
+            bought += self.simul_history[feat_key]['CR_bought'].copy()
+            seen += self.simul_history[feat_key]['CR_seen'].copy()
+            initial_prod += self.simul_history[feat_key]['initial_prod'].copy()
+            n_prod_data += self.simul_history[feat_key]['n_prod_sold'].copy()
+            prob_est += self.est_feat_prob_mat[feat1, feat2]
+        # conversion rates estimate
+        bought += self.initial_beta_CR[0]
+        seen += self.initial_beta_CR[0]+self.initial_beta_CR[1]
+        cr_est = bought/seen
+        # alpha ratios estimate
+        initial_prod += self.initial_beta_alpha[0]
+        alpha_est = initial_prod/np.sum(initial_prod)
+        # number of product sold estimate
+        n_prod_data += self.initial_n_prod_data
+        n_prod_est = n_prod_data[0]/n_prod_data[1]        
+        
+        return cr_est, alpha_est, n_prod_est, prob_est
+
+    def run(self):
+        # Initial context is always all users in same group
+        context = np.array([[0,0],[0,0]])
+        # At first I can split on both the features
+        split_var_list = [0,1]
+        if self.split(context, 0, split_var_list): 
+            self.split(context, 0, split_var_list)
+            self.split(context, 1, split_var_list)
+        
+        return context
+
+    def split(self, context, group_to_split: int, split_var_list: list[int]) :
+        # At first compute the context value for the group we want to split
+        group0 = feature_matrix_to_list(context)[group_to_split]
+        context_value0 = self.context_value(group0)
+        # Then consider possible splits and 
+        values_list = np.zeros(len(split_var_list))
+        split_list = []
+        i_list, j_list = np.where(context == group_to_split)
+        for (k, var) in enumerate(split_var_list):
+            if var == 0:
+                split_group1 = list(zip(i_list[i_list == 0], j_list[i_list == 0]))
+                split_group2 = list(zip(i_list[i_list == 1], j_list[i_list == 1]))
+            if var == 1:
+                split_group1 = list(zip(i_list[j_list == 0], j_list[j_list == 0]))
+                split_group2 = list(zip(i_list[j_list == 1], j_list[j_list == 1]))
+
+            values_list[k] = self.context_value(split_group1) + self.context_value(split_group2)
+
+            split_list.append(copy.deepcopy(split_group2))
+        
+        max_i = np.argmax(values_list)
+        if values_list[max_i] > context_value0:
+
+            new_group = np.max(context)+1
+            split = split_list[max_i]
+            for feat_couple in split:
+                i, j = feat_couple
+                context[i,j] = new_group 
+            split_done = True
+            if len(split_var_list) == 2:
+                split_var_list.pop(max_i) # reference to split_var_list outside the scope 
+        else:
+            split_done = False
+
+        return split_done

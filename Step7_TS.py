@@ -1,11 +1,10 @@
-
-# from ContextGeneration import ContextGeneration
+from ContextGeneration import *
 from Learner import *
 from TS_context import *
 
 class Step7_TS():
 
-    def __init__(self, env: Environment, beta_CR, beta_alpha, n_prod_data, learning_rate = 1.0) :
+    def __init__(self, env: Environment, beta_CR, beta_alpha, n_prod_data, confidence, learning_rate = 1.0) :
         # Real environment
         self.env = env
         # Learning Rate
@@ -49,8 +48,11 @@ class Step7_TS():
                                       '10': copy.deepcopy(simul_dict),
                                       '11': copy.deepcopy(simul_dict)}
         self.simul_history = copy.deepcopy(self.initial_simul_history)
-         # PROBABILITY MATRIX FOR THE COUPLE OF FEATURES
+        # PROBABILITY MATRIX FOR THE COUPLE OF FEATURES
         self.est_feat_prob_mat = np.array([[0.25, 0.25], [0.25, 0.25]])
+        # CONTEXT GENERATOR
+        self.context_generator = ContextGeneration(self.env, confidence, self.simul_history, 
+                                                    self.est_feat_prob_mat,beta_CR, beta_alpha, n_prod_data, self.lr)
         # Initialize list to store context history (updated only when context generation is run, i.e. every 14 days)
         self.context_history = []
         #-------------------- end of step 7 specific initialization ---------------------#
@@ -187,17 +189,11 @@ class Step7_TS():
         self.context = np.array([[0,0],[0,0]])
         self.simul_history = copy.deepcopy(self.initial_simul_history)
         self.update_learner_list()
-        context_dict = {0: np.array([[0,0],[0,0]]),
-        1: np.array([[0,0],[1,1]]),
-        2: np.array([[0,1],[2,2]]),
-        3: np.array([[0,1],[2,3]]),}
         # A complete run of n_days, with context generation algorithm run every 2 weeks (14 days)
         for t in range(n_days):
             if t%14 and t!= 0:
-                context_prob = [0.25, 0.25, 0.25, 0.25] if t < 100 else [0.05, 0.1, 0.8, 0.05]
-                choice = np.random.choice([0,1,2,3], p = context_prob)
-                new_context = context_dict[choice]
-                self.context = new_context.copy() #################################### <-- CONTEXT GENERATION QUI BOSCHINIIIIIII
+                self.context_generator.update_history(self.simul_history, self.est_feat_prob_mat)
+                self.context = self.context_generator.run()
                 self.update_learner_list()
                 context_list.append(self.context.copy())
             # Do a single iteration of the TS, and store the LIST of price combinations chosen for each group in the context
