@@ -2,7 +2,7 @@ import numpy as np
 from ucb_learner import *
 from Environment import *
 from Greedy_optimizer import *
-DIVISION_NUMBER = 3
+DIVISION_LEARNING_NUMBER = 3
 
 
 class step3_ucb1(ucb_learner):
@@ -41,7 +41,7 @@ class step3_ucb1(ucb_learner):
         for product_idx in range(self.n_products):
             for arm_idx in range(self.n_arms):
                 # (below) n = number of visualization for product x with arm x, divided by the estimated mean number of daily users
-                n = np.sum(np.multiply(np.array(self.pulled, dtype=np.int32)[:, 0, product_idx] == arm_idx, np.array(self.pulled, dtype=np.int32)[:, 1, product_idx]))/(np.mean(self.daily_users)/DIVISION_NUMBER)
+                n = np.sum(np.multiply(np.array(self.pulled, dtype=np.int32)[:, 0, product_idx] == arm_idx, np.array(self.pulled, dtype=np.int32)[:, 1, product_idx]))/(np.mean(self.daily_users)/DIVISION_LEARNING_NUMBER)
                 if n > 0:
                     self.widths[product_idx, arm_idx] = np.sqrt(2 * np.log(self.t) / (n * (self.t - 1)))
                 else:
@@ -75,4 +75,6 @@ class step3_ucb1(ucb_learner):
     def print_estimations(self):
         # print("Conversion rates - estimated means (over n experiments):\n", np.mean(np.array(self.crs_estimations_over_n_experiments)[:, 0], axis=0))
         # print("Conversion rates - estimated widths (over n experiments):\n", np.mean(np.array(self.crs_estimations_over_n_experiments)[:, 1], axis=0))
-        print("Conversion rates estimation (means + widths, over n experiments):\n", np.mean(np.sum([np.array(self.crs_estimations_over_n_experiments)[:, 0], np.array(self.crs_estimations_over_n_experiments)[:, 1]], axis=0), axis=0))
+        crs_estimation_mean_over_experiment = np.mean(np.sum([np.array(self.crs_estimations_over_n_experiments)[:, 0], np.array(self.crs_estimations_over_n_experiments)[:, 1]], axis=0), axis=0)
+        crs_estimation_mean_over_experiment = np.minimum(crs_estimation_mean_over_experiment, 1)
+        print("Conversion rates estimation (means + widths, over n experiments):\n", crs_estimation_mean_over_experiment)
