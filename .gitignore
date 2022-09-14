@@ -5,3 +5,5 @@ script*
 plots*
 __pycache__/**
 venv copy/**
+main.py
+conversion_rates_*

@@ -23,6 +23,7 @@ class step4_ucb1(step3_ucb1):
         self.crs_estimations_over_n_experiments = []
         self.alphas_estimations_over_n_experiments = []
         self.n_products_sold_over_n_experiments = []
+        self.opt_reward = self.env.optimal_reward()[0]
 
     def pull_arms(self):
         sampled_cr = np.minimum(np.array([self.means + self.widths]), 1) # limit to 1 for all the crs
@@ -69,7 +70,7 @@ class step4_ucb1(step3_ucb1):
     def run(self, n_days, daily_users):
         self.reset()
         collected_rewards_temp = []
-        opt_reward = self.env.optimal_reward()[0]
+        opt_reward = self.opt_reward
         instant_regret = []
         for t in range(n_days):
             pulled_arms = self.pull_arms()

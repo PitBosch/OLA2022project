@@ -5,7 +5,7 @@ from Product import Product
 from Greedy_optimizer import *
 import numpy as np
 import matplotlib.pyplot as plt
-from step3_learner import TS_learner3
+from Step3_TS import TS_learner3
 
 #potrei creare le 3 categorie
 #EV=Esperti

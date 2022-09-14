@@ -1,14 +1,20 @@
+import numpy as np
 from ContextGeneration import ContextGeneration
-from Learner import *
-from TS_context import *
+from Environment import *
+from Greedy_optimizer import *
+from ucb_context import *
 
-class Step7_TS():
+class step7_ucb1():
 
-    def __init__(self, env: Environment, beta_CR, beta_alpha, n_prod_data, confidence, learning_rate = 1.0) :
+    def __init__(self, n_products, n_arms, prices, env: Environment, confidence):
         # Real environment
         self.env = env
-        # Learning Rate
-        self.lr = learning_rate
+        # Prices
+        self.prices = prices
+        # Number of products
+        self.n_products = n_products
+        # Number of arms
+        self.n_arms = n_arms
         # Initialize history of theoretical rewards 
         self.reward_history = []
         # History of prices combination chosen
@@ -19,7 +25,7 @@ class Step7_TS():
         # Optimal theoretical reward
         self.opt_reward = np.sum(env.optimal_reward(Disaggregated=True)[0]*env.user_cat_prob)
         # Initialize an empty list for the learner_list
-        self.learner_list = []
+        self.learner_list = list[ucb_context]
         # SIMULATION HISTORY DIVIDED FOR COUPLE OF FEATURES (initialization)
         simul_dict = {'n_users' : 0,
                       'CR_bought' : np.zeros((5,4)),
@@ -35,21 +41,21 @@ class Step7_TS():
         self.est_feat_prob_mat = np.array([[0.25, 0.25], [0.25, 0.25]])
         # CONTEXT GENERATOR
         self.context_generator = ContextGeneration(self.env, confidence, self.simul_history, 
-                                                    self.est_feat_prob_mat,beta_CR, beta_alpha, n_prod_data, self.lr)
+                                                    self.est_feat_prob_mat, np.ones((2,5,4)), np.ones((2,5)), np.ones((2,5)))
         # Initialize list to store context history (updated only when context generation is run, i.e. every 14 days)
         self.context_history = []
-        #-------------------- end of step 7 specific initialization ---------------------#
+    #-------------------- end of step 7 specific initialization ---------------------#
         # CONVERSION RATES :
         # store informations about beta parameters and inizialize CR matrix to store estimate after a complete run
-        self.initial_beta_CR = beta_CR.copy()
+        self.initial_beta_CR = np.ones((2,5,4))
         # ALPHA RATIOS :
         # # store informations about beta parameters and inizialize alpha est to store estimate after a complete run
-        self.initial_beta_alpha = beta_alpha.copy()             # Note beta_alpha is a 2x5 matrix (2 parameters, 5 products)
+        self.initial_alpha = np.ones(5)           # Note beta_alpha is a 2x5 matrix (2 parameters, 5 products)
         # N PRODUCT SOLD
         # n_prod_data is a 2x5 matrix:
         # first row --> number of product sold for a specific product in the simulations
         # second row --> number of times user bought a specific product (for each product obviously)
-        self.initial_n_prod_data = n_prod_data
+        self.initial_n_prod_data = np.ones((2,5))
 
     def param_info(self, group):
         """ Retrieve information about parameters to be estimate for the requested group.
@@ -64,13 +70,13 @@ class Step7_TS():
             feat2 = j_list[k]
             feat_key = str(feat1)+str(feat2)
             a += self.simul_history[feat_key]['CR_bought']
-            b += self.simul_history[feat_key]['CR_seen'] - self.simul_history[feat_key]['CR_bought']
+            b += self.simul_history[feat_key]['CR_seen']
             initial_prod += self.simul_history[feat_key]['initial_prod']
             n_prod_data += self.simul_history[feat_key]['n_prod_sold']
 
-        beta_CR = np.array([a, b])
+        CR_info = np.array([a, b])
         
-        return beta_CR, initial_prod, n_prod_data
+        return CR_info, initial_prod, n_prod_data
 
     def update_feat_prob_mat(self):
         """ Update the matrix containing the relative frequency of each couple of features """
@@ -90,30 +96,27 @@ class Step7_TS():
         n_groups = np.max(self.context)+1
         feature_list = feature_matrix_to_list(self.context)
         for group in range(n_groups):
-            CR_beta, initial_prod, n_prod_info = self.param_info(group)
+            CR_info, alpha_info, n_prod_info = self.param_info(group)
             # Once we have collected the informations stored in simul history we must sum the a priori
-            # assumptions contained in initial values for parameter. This is needed to guarantee some exploration
-            # alpha ratio
-            n_users = np.sum(initial_prod)
-            alpha_beta = np.zeros((2,5))
-            alpha_beta[0] += initial_prod
-            alpha_beta[1] += n_users - initial_prod
-            alpha_beta += self.initial_beta_alpha
+            # assumptions contained in initial values for parameter. This is needed to avoid numerical errors
+            
             # conversion rates
-            CR_beta += self.initial_beta_CR
+            CR_info += self.initial_beta_CR
+            # alpha ratios
+            alpha_info += self.initial_alpha
             # number of product sold
             n_prod_info += self.initial_n_prod_data
             # specific group list
             group_list = feature_list[group]
             # initialize and append new learner
-            self.learner_list.append(TS_context(self.env, CR_beta, alpha_beta, n_prod_info, group_list, self.lr))
+            self.learner_list.append(ucb_context(self.env, self.prices, CR_info, alpha_info, n_prod_info, group_list))
         return
 
     def update_simul_history(self, daily_simul, price_comb_list):
     
         for key in daily_simul.keys():
             # N USERS
-            self.simul_history[key]['n_users'] += daily_simul[key]['n_users']*self.lr
+            self.simul_history[key]['n_users'] += daily_simul[key]['n_users']
             # CONVERSION RATES
             # simul_history store 2 matrix 5x4 (products x possible prices) for conversion rates informations
             # BUT daily simul store the informations only for the chosen price combination
@@ -123,12 +126,12 @@ class Step7_TS():
             group = self.context[i,j]
             price_comb = price_comb_list[group]
             # with [np.arange(5), price_comb] for each row only the values corresponding to the chosen price combination are updated
-            self.simul_history[key]['CR_bought'][np.arange(5), price_comb] += daily_simul[key]['CR_data'][0]*self.lr 
-            self.simul_history[key]['CR_seen'][np.arange(5), price_comb] += daily_simul[key]['CR_data'][1]*self.lr 
+            self.simul_history[key]['CR_bought'][np.arange(5), price_comb] += daily_simul[key]['CR_data'][0]
+            self.simul_history[key]['CR_seen'][np.arange(5), price_comb] += daily_simul[key]['CR_data'][1] 
             # ALPHA RATIOS
-            self.simul_history[key]['initial_prod'] += daily_simul[key]['initial_prod']*self.lr
+            self.simul_history[key]['initial_prod'] += daily_simul[key]['initial_prod']
             # NUMBER OF PRODUCTS SOLD
-            self.simul_history[key]['n_prod_sold'] += daily_simul[key]['n_prod_sold']*self.lr
+            self.simul_history[key]['n_prod_sold'] += daily_simul[key]['n_prod_sold']
         
         return
     
@@ -159,7 +162,7 @@ class Step7_TS():
         # for each group in the context
         opt_combination_list = []
         for learner in self.learner_list:
-            opt_comb = learner.iteration(self.est_feat_prob_mat)
+            opt_comb = learner.pull_arms(self.est_feat_prob_mat)
             opt_combination_list.append(opt_comb.copy())
         
         return opt_combination_list
@@ -206,7 +209,10 @@ class Step7_TS():
             # Update parameters for each learner
             daily_info = self.compute_info(daily_simul)
             for k, learner in enumerate(self.learner_list):
-                learner.update_parameters(daily_info[k], opt_price_comb[k])
+                cr_data = np.array([daily_info[k]['CR_bought'], daily_info[k]['CR_seen']]).copy()
+                alpha_data = daily_info[k]['initial_prod'].copy()
+                n_prod_data = daily_info[k]['n_prod_sold'].copy()
+                learner.update(opt_price_comb[k], cr_data, alpha_data, n_prod_data)
         self.price_comb_history.append(price_comb_list.copy())
         self.reward_history.append(reward_list.copy())
         self.context_history.append(context_list.copy())

@@ -38,12 +38,11 @@ class ContextGeneration():
 
     def context_value(self, group_list):
         """ compute the product between probability's lower bound and optimal reward lower bound """
-        dim = len(group_list)
         cr, alpha, n_prod, p = self.get_group_info(group_list)
-        opt_rew = self.greedy.run(conversion_rates=[cr]*dim, alphas_ratio=[alpha]*dim, n_prod=[n_prod]*dim,
+        opt_rew = self.greedy.run(conversion_rates=cr, alphas_ratio=alpha, n_prod=n_prod,
                                         group_list=group_list, feat_prob_mat=self.est_feat_prob_mat)['expected_reward']
         p_lcb = p if p == 1 else self.lcb(p,group_list)
-        #p_lcb = self.lcb(p,group_list)
+        #p_lcb = self.lcb(p, group_list)
         cv = p_lcb*self.lcb(opt_rew, group_list)
         return cv
 
@@ -56,7 +55,7 @@ class ContextGeneration():
             j = feat_couple[1]
             feat_key = str(i)+str(j)
             n_data += self.simul_history[feat_key]['n_users']
-        n_data = n_data * self.lr
+        n_data = n_data/len(group_list)**2
         # return the lower confidence bound for the datum analyzed
         return max(0, data - np.sqrt(-np.log(self.confidence)/(2*n_data)))
 
@@ -72,6 +71,10 @@ class ContextGeneration():
         n_prod_data = np.zeros((2,5))
         # initialize prob estimate to 0.
         prob_est = 0.
+
+        cr_list = []
+        alpha_list = []
+        n_prod_list = []
         
         for feat_couple in group_list:
             #loop through the list
@@ -82,18 +85,21 @@ class ContextGeneration():
             initial_prod += self.simul_history[feat_key]['initial_prod'].copy()
             n_prod_data += self.simul_history[feat_key]['n_prod_sold'].copy()
             prob_est += self.est_feat_prob_mat[feat1, feat2]
-        # conversion rates estimate
-        bought += self.initial_beta_CR[0]
-        seen += self.initial_beta_CR[0]+self.initial_beta_CR[1]
-        cr_est = bought/seen
-        # alpha ratios estimate
-        initial_prod += self.initial_beta_alpha[0]
-        alpha_est = initial_prod/np.sum(initial_prod)
-        # number of product sold estimate
-        n_prod_data += self.initial_n_prod_data
-        n_prod_est = n_prod_data[0]/n_prod_data[1]        
+            # conversion rates estimate
+            bought += self.initial_beta_CR[0]
+            seen += self.initial_beta_CR[0]+self.initial_beta_CR[1]
+            cr_est = bought/seen
+            cr_list.append(cr_est.copy())
+            # alpha ratios estimate
+            initial_prod += self.initial_beta_alpha[0]
+            alpha_est = initial_prod/np.sum(initial_prod)
+            alpha_list.append(alpha_est.copy())
+            # number of product sold estimate
+            n_prod_data += self.initial_n_prod_data
+            n_prod_est = n_prod_data[0]/n_prod_data[1]   
+            n_prod_list.append(n_prod_est.copy())     
         
-        return cr_est, alpha_est, n_prod_est, prob_est
+        return cr_list, alpha_list, n_prod_list, prob_est
 
     def run(self):
         """ Generate a new context based on last informations available """
@@ -101,10 +107,11 @@ class ContextGeneration():
         context = np.array([[0,0],[0,0]])
         # At first I can split on both the features
         split_var_list = [0,1]
+
         if self.split(context, 0, split_var_list): 
             self.split(context, 0, split_var_list)
             self.split(context, 1, split_var_list)
-        
+        # print(context)
         return context
 
     def split(self, context, group_to_split: int, split_var_list: list[int]) :
@@ -128,7 +135,8 @@ class ContextGeneration():
             split_list.append(copy.deepcopy(split_group2))
         
         max_i = np.argmax(values_list)
-        if values_list[max_i] > context_value0:
+        # print('Context Value : %f VS split value : %f' %(context_value0, values_list[max_i]))
+        if values_list[max_i] > context_value0 :
 
             new_group = np.max(context)+1
             split = split_list[max_i]

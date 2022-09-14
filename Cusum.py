@@ -23,11 +23,11 @@ class Cusum:
             s_minus = -(sample - self.reference) - self.eps
             self.g_plus = max(0, self.g_plus + s_plus)
             self.g_minus = max(0, self.g_minus + s_minus)
-            cahnge_detected = self.g_plus > self.h or self.g_minus > self.h
+            change_detected = self.g_plus > self.h or self.g_minus > self.h
         # update time t
         self.t += 1
 
-        return cahnge_detected
+        return change_detected
     def reset(self, change_t):
         """ Reset all the relevant variable"""  
         self.last_change_t = change_t

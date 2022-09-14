@@ -63,12 +63,10 @@ class Step6_CD(step5_ucb1):
         n_of_purchase_for_product = cr_data[0].astype(int)
         n_of_clicks_for_product = cr_data[1].astype(int)
         crs_estimation = np.divide(n_of_purchase_for_product, n_of_clicks_for_product)
-        if len(self.pulled) < self.crs_sw: # self.pulled (the history), is updated to contain always #[sliding window] samples
-            self.pulled.append([arms_pulled, n_of_clicks_for_product.tolist(), crs_estimation.tolist()])
-            self.t += 1
-        else:
-            self.pulled.pop(0)
-            self.pulled.append([arms_pulled, n_of_clicks_for_product.tolist(), crs_estimation.tolist()])
+        
+        self.pulled.append([arms_pulled, n_of_clicks_for_product.tolist(), crs_estimation.tolist()])
+        self.t += 1
+        
         # Verify if change detection algorithms activate for one of the conversion rates estimated
         cr_est = cr_data[0]/(cr_data[1]+1e-6)
         for prod_ind, price_ind in zip(range(5), arms_pulled):
@@ -93,11 +91,9 @@ class Step6_CD(step5_ucb1):
         # GRAPH WEIGHTS UPDATE
         graph_weights_mean = np.divide(clicks, np.maximum(visualizations, 1))
         # updating graph data according to the sliding window length
-        if len(self.graph_data) < self.step5_only_sw:
-            self.graph_data.append([graph_weights_mean.tolist(), visualizations.tolist()])
-        else:
-            self.graph_data.pop(0) # delete the first element
-            self.graph_data.append([graph_weights_mean.tolist(), visualizations.tolist()]) # adding a new tuple to the history
+        
+        self.graph_data.append([graph_weights_mean.tolist(), visualizations.tolist()])
+        
         # updating estimated means (useless if else, only for robustness)
         if len(self.graph_data) <= self.step5_only_sw:
             self.graph_weights_means = np.divide(np.sum(np.multiply(np.array(self.graph_data)[:, 0], np.array(self.graph_data)[:, 1]), axis=0), np.maximum(np.sum(np.array(self.graph_data)[:, 1], axis=0), 1))
