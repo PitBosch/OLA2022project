@@ -36,26 +36,29 @@ class ucb_context(step4_ucb1):
             for price_ind in range(4):
                 # conversion rates
                 n = self.cr_info[1, prod_ind, price_ind]
-                if n>0 and t>0:
+                if n>=1 and t>1:
                     self.widths[prod_ind, price_ind] = np.sqrt(2 * np.log(t) / (n * (t - 1)))
                 else:
                     self.widths[prod_ind, price_ind] = np.inf
             # alpha
             n_alpha = self.alpha_info[prod_ind]
-            if n_alpha>0 and t>0:
+            if n_alpha>=1 and t>1:
                     self.alphas_widths[prod_ind] = np.sqrt(2 * np.log(t) / (n_alpha * (t - 1)))
             else:
                 self.alphas_widths[prod_ind] = np.inf
             # number of product solf
             n_prod = self.n_prod_info[1, prod_ind]
-            if n_prod>0 and t>0:
+            if n_prod>=1 and t>1:
                     self.n_products_sold_widths[prod_ind] = np.sqrt(2 * np.log(t) / (n_prod * (t - 1)))
             else:
                 self.n_products_sold_widths[prod_ind] = np.inf
 
     def pull_arms(self, est_feat_prob_mat):
         sampled_cr = np.minimum(np.array([self.means + self.widths]), 1) # limit to 1 for all the crs
-        alphas_ratio = np.divide(np.sum([self.alphas_means, self.alphas_widths], axis=0), np.sum([self.alphas_means, self.alphas_widths]))
+        if np.sum([self.alphas_means, self.alphas_widths]) == np.inf:
+            alphas_ratio = [0.2, 0.2, 0.2, 0.2, 0.2]
+        else:
+            alphas_ratio = np.divide(np.sum([self.alphas_means, self.alphas_widths], axis=0), np.sum([self.alphas_means, self.alphas_widths]))
         n_prod = np.minimum(np.sum([self.n_products_sold_means, self.n_products_sold_widths], axis=0), N_PROD_SOLD_MINIMUM)
         cr_list = list(sampled_cr)*self.group_dim
         alpha_list = [alphas_ratio]*self.group_dim
@@ -84,7 +87,7 @@ class ucb_context(step4_ucb1):
             self.means[prod_ind, price_ind] = self.cr_info[0,prod_ind,price_ind]/self.cr_info[1,prod_ind,price_ind]
             # (below) n = number of visualization for product x with arm x, divided by the estimated mean number of daily users
             n = self.cr_info[1, prod_ind, price_ind]/(np.mean(self.daily_users)/DIVISION_LEARNING_NUMBER)
-            if n>=1 and t>0:
+            if n>=1 and t>1:
                 self.widths[prod_ind, price_ind] = np.sqrt(2 * np.log(t) / (n * (t - 1)))
             else:
                 self.widths[prod_ind, price_ind] = np.inf
@@ -95,12 +98,12 @@ class ucb_context(step4_ucb1):
         for product_idx in range(self.n_products):
             # total number of samples on the secondary product [product_idx_2] for [prod_idx_1] as primary
             alphas_n = self.alpha_info[product_idx]
-            if alphas_n > 0:
+            if alphas_n >= 1 and t>1:
                 self.alphas_widths[product_idx] = np.sqrt(np.divide(2 * np.log(t), (alphas_n * (t - 1))))
             else:
                 self.alphas_widths[product_idx] = np.inf
             n_products_sold_n = self.n_prod_info[1, product_idx]
-            if n_products_sold_n > 0:
+            if n_products_sold_n >= 1 and t>1:
                 self.n_products_sold_widths[product_idx] = np.sqrt(np.divide(2 * np.log(t), (n_products_sold_n * (t - 1))))
             else:
                 self.n_products_sold_widths[product_idx] = np.inf
