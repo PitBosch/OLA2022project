@@ -1,7 +1,6 @@
 from Environment import *
 from Greedy_optimizer import *
 import numpy as np
-from Step7_TS import *
 
 class ContextGeneration():
     #What we need to do is to evaluate every possible partition of the space of the features, 
@@ -55,7 +54,7 @@ class ContextGeneration():
             j = feat_couple[1]
             feat_key = str(i)+str(j)
             n_data += self.simul_history[feat_key]['n_users']
-        n_data = n_data/len(group_list)**2
+        # n_data = n_data/len(group_list)**2
         # return the lower confidence bound for the datum analyzed
         return max(0, data - np.sqrt(-np.log(self.confidence)/(2*n_data)))
 

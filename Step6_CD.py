@@ -82,7 +82,7 @@ class Step6_CD(step5_ucb1):
             # update mean values
             self.means[prod_ind, price_ind] = self.cr_info[0,prod_ind,price_ind]/self.cr_info[1,prod_ind,price_ind]
             # (below) n = number of visualization for product x with arm x, divided by the estimated mean number of daily users
-            n = self.cr_info[1, prod_ind, price_ind]/(np.mean(self.daily_users)/DIVISION_NUMBER)
+            n = self.cr_info[1, prod_ind, price_ind]/(np.mean(self.daily_users)/DIVISION_LEARNING_NUMBER)
             t = self.t #- self.CD_matrix[prod_ind][price_ind].last_change_t + 1
             if n>0 and t>0:
                 self.widths[prod_ind, price_ind] = np.sqrt(2 * np.log(t) / (n * (t - 1)))

@@ -71,6 +71,7 @@ class step7_ucb1():
             feat_key = str(feat1)+str(feat2)
             a += self.simul_history[feat_key]['CR_bought']
             b += self.simul_history[feat_key]['CR_seen']
+            
             initial_prod += self.simul_history[feat_key]['initial_prod']
             n_prod_data += self.simul_history[feat_key]['n_prod_sold']
 
@@ -88,7 +89,7 @@ class step7_ucb1():
 
         self.est_feat_prob_mat = M/np.sum(M)    
 
-    def update_learner_list(self):
+    def update_learner_list(self, t):
         """ Every time the context generation algorithm is run we have to initialize a list
             of learner, containing a learner for each group of the context generated.
             Learners must be fed with right information given by feature list"""
@@ -99,7 +100,6 @@ class step7_ucb1():
             CR_info, alpha_info, n_prod_info = self.param_info(group)
             # Once we have collected the informations stored in simul history we must sum the a priori
             # assumptions contained in initial values for parameter. This is needed to avoid numerical errors
-            
             # conversion rates
             CR_info += self.initial_beta_CR
             # alpha ratios
@@ -109,7 +109,7 @@ class step7_ucb1():
             # specific group list
             group_list = feature_list[group]
             # initialize and append new learner
-            self.learner_list.append(ucb_context(self.env, self.prices, CR_info, alpha_info, n_prod_info, group_list))
+            self.learner_list.append(ucb_context(self.env, self.n_products, self.n_arms, self.prices, CR_info, alpha_info, n_prod_info, group_list, t))
         return
 
     def update_simul_history(self, daily_simul, price_comb_list):
@@ -188,13 +188,13 @@ class step7_ucb1():
         # Initialize with initial context (default: all users aggregated)
         self.context = np.array([[0,0],[0,0]])
         self.simul_history = copy.deepcopy(self.initial_simul_history)
-        self.update_learner_list()
+        self.update_learner_list(0)
         # A complete run of n_days, with context generation algorithm run every 2 weeks (14 days)
         for t in range(n_days):
             if t%14 == 0 and t!= 0:
                 self.context_generator.update_history(self.simul_history, self.est_feat_prob_mat)
                 self.context = self.context_generator.run()
-                self.update_learner_list()
+                self.update_learner_list(t)
                 context_list.append(self.context.copy())
             # Do a single iteration of the TS, and store the LIST of price combinations chosen for each group in the context
             opt_price_comb = self.iteration()
@@ -209,7 +209,7 @@ class step7_ucb1():
             # Update parameters for each learner
             daily_info = self.compute_info(daily_simul)
             for k, learner in enumerate(self.learner_list):
-                cr_data = np.array([daily_info[k]['CR_bought'], daily_info[k]['CR_seen']]).copy()
+                cr_data = daily_info[k]['CR_data']
                 alpha_data = daily_info[k]['initial_prod'].copy()
                 n_prod_data = daily_info[k]['n_prod_sold'].copy()
                 learner.update(opt_price_comb[k], cr_data, alpha_data, n_prod_data)

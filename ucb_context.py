@@ -1,15 +1,57 @@
 from step4_ucb1 import *
 
 class ucb_context(step4_ucb1):
-    def __init__(self, env: Environment, prices, CR_info, alpha_info, n_prod_info, group_list):
+    def __init__(self, env: Environment,n_products, n_arms, prices, CR_info, alpha_info, n_prod_info, group_list, t):
+        self.n_products = n_products
+        self.n_arms = n_arms
+        self.prices = prices
+        self.env = env
+        self.greedy_opt = Greedy_optimizer(env)
 
-        super().__init__(5, 5, prices, env)
+        self.means = np.zeros((n_products, n_arms))
+        self.widths = np.ones((n_products, n_arms)) * np.inf
+        self.alphas_means = np.array([1/5, 1/5, 1/5, 1/5, 1/5])
+        self.alphas_widths = np.ones(self.n_products) * np.inf
+        self.n_products_sold_means = np.array([1, 1, 1, 1, 1])
+        self.n_products_sold_widths = np.ones(self.n_products) * np.inf
+        
+        
+        self.daily_users = [] # list of int; the number of users observed each day
+        # time
+        self.t = t
+        # INITIALIZE UNCERTAIN PARAMETERS WITH OLD VALUES
         self.cr_info = CR_info.copy()
         self.alpha_info = alpha_info.copy()
         self.n_prod_info = n_prod_info.copy()
-        self.daily_users = np.sum(alpha_info)
+        # INITIALIZE INFORMATIONS ABOUT GROUP
         self.group_list = group_list.copy()
         self.group_dim = len(self.group_list)
+        # INITIALIZE MEAN AND WIDTHS OF THE UNCERTAIN PARAMETERS
+            # means
+        self.means = self.cr_info[0, :, :]/self.cr_info[1, :, :]
+        self.alphas_means = self.alpha_info/np.sum(self.alpha_info)
+        self.n_products_sold_means = self.n_prod_info[0]/self.n_prod_info[1]
+            # widths
+        for prod_ind in range(5):
+            for price_ind in range(4):
+                # conversion rates
+                n = self.cr_info[1, prod_ind, price_ind]
+                if n>0 and t>0:
+                    self.widths[prod_ind, price_ind] = np.sqrt(2 * np.log(t) / (n * (t - 1)))
+                else:
+                    self.widths[prod_ind, price_ind] = np.inf
+            # alpha
+            n_alpha = self.alpha_info[prod_ind]
+            if n_alpha>0 and t>0:
+                    self.alphas_widths[prod_ind] = np.sqrt(2 * np.log(t) / (n_alpha * (t - 1)))
+            else:
+                self.alphas_widths[prod_ind] = np.inf
+            # number of product solf
+            n_prod = self.n_prod_info[1, prod_ind]
+            if n_prod>0 and t>0:
+                    self.n_products_sold_widths[prod_ind] = np.sqrt(2 * np.log(t) / (n_prod * (t - 1)))
+            else:
+                self.n_products_sold_widths[prod_ind] = np.inf
 
     def pull_arms(self, est_feat_prob_mat):
         sampled_cr = np.minimum(np.array([self.means + self.widths]), 1) # limit to 1 for all the crs
@@ -27,16 +69,12 @@ class ucb_context(step4_ucb1):
         # daily users update
         self.daily_users.append(n_users)
         # conversion rates info update
-        n_of_purchase_for_product = cr_data[0].astype(int)
-        n_of_clicks_for_product = cr_data[1].astype(int)
-        crs_estimation = np.divide(n_of_purchase_for_product, n_of_clicks_for_product)
         self.cr_info[0, np.arange(5), arms_pulled ] += cr_data[0]
         self.cr_info[1, np.arange(5), arms_pulled ] += cr_data[1]
         # alpha info update
         self.alpha_info += alpha_data
         # n_prod info update
         self.n_prod_info += n_prod_data
-        self.pulled.append([arms_pulled, n_of_clicks_for_product.tolist(), crs_estimation.tolist()])
         self.t += 1
         
         # CONVERSION RATES UPDATE
@@ -45,14 +83,14 @@ class ucb_context(step4_ucb1):
             # update mean values
             self.means[prod_ind, price_ind] = self.cr_info[0,prod_ind,price_ind]/self.cr_info[1,prod_ind,price_ind]
             # (below) n = number of visualization for product x with arm x, divided by the estimated mean number of daily users
-            n = self.cr_info[1, prod_ind, price_ind]/(np.mean(self.daily_users)/DIVISION_NUMBER)
-            if n>0 and t>0:
+            n = self.cr_info[1, prod_ind, price_ind]/(np.mean(self.daily_users)/DIVISION_LEARNING_NUMBER)
+            if n>=1 and t>0:
                 self.widths[prod_ind, price_ind] = np.sqrt(2 * np.log(t) / (n * (t - 1)))
             else:
                 self.widths[prod_ind, price_ind] = np.inf
         # ALPHA RATIO and  NUMBER OF PRODUCT SOLD UPDATE
         # means update
-        self.alphas_means = self.alpha_info/n_users
+        self.alphas_means = self.alpha_info/np.sum(self.alpha_info)
         self.n_products_sold_means = self.n_prod_info[0]/self.n_prod_info[1]
         for product_idx in range(self.n_products):
             # total number of samples on the secondary product [product_idx_2] for [prod_idx_1] as primary
