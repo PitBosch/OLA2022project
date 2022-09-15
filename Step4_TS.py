@@ -77,7 +77,7 @@ class Step4_TS(Step3_TS):
         sampled_alpha = self.sample_alpha()
         sampled_n_prod = self.sample_n_prod()
         # 2) Run the Greedy optimizer and select the best combination  
-        opt_prices_combination = self.Greedy_opt.run(conversion_rates=[sampled_CR]*3, alphas_ratio=[sampled_alpha]*3, n_prod=[sampled_n_prod]*3)["combination"]
+        opt_prices_combination = self.Greedy_opt.run(conversion_rates=[sampled_CR], alphas_ratio=[sampled_alpha], n_prod=[sampled_n_prod])["combination"]
         # 3) Fixed the prices for the day simulate the daily user iterations
         simulation_result = self.env.simulate_day(daily_users, opt_prices_combination, ["conversion_rates", "alpha_ratios", "products_sold"])
         # 4) Update Beta_parameters according to the simulation done
