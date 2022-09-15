@@ -7,3 +7,4 @@ __pycache__/**
 venv copy/**
 main.py
 conversion_rates_*
+test*
