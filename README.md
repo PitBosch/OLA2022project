@@ -1,5 +1,5 @@
 # Pricing Project
- Project of the course Data Intelligence Applications with Professor Nicola Gatti in Politecnico di Milano A.Y. 2021/2022.
+ Project of the course Online Learning Applications with Professor Nicola Gatti in Politecnico di Milano A.Y. 2021/2022.
 
 ## Introduction
 We imagine to have to set the optimal prices for a selction of 5 red wine's bottles on a E-commerce called PEPAS. Users have two observable binary features:
