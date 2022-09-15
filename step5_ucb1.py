@@ -81,6 +81,10 @@ class step5_ucb1(step3_ucb1):
 
     def print_estimations(self):
         graph_weights_mean_over_experiment = np.mean(np.sum([np.array(self.graph_weights_estimations_over_n_experiments)[:, 0], np.array(self.graph_weights_estimations_over_n_experiments)[:, 1]], axis=0), axis=0)
-        graph_weights_mean_over_experiment = np.minimum(graph_weights_mean_over_experiment, 1)
-        print("Estimated graph weights (means + widths, over n experiment, lambda included):\n", graph_weights_mean_over_experiment, "\n\n")
+        result = np.zeros(graph_weights_mean_over_experiment.shape)
+        for x in range(0, graph_weights_mean_over_experiment.shape[0]):
+            for y in range(0, graph_weights_mean_over_experiment.shape[1]):
+                if graph_weights_mean_over_experiment[x, y] <= 1:
+                    result[x, y] = graph_weights_mean_over_experiment[x, y]
+        print("Estimated graph weights (means + widths, over n experiment, lambda included):\n", result, "\n\n")
         super().print_estimations()
