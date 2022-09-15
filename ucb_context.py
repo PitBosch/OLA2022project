@@ -1,18 +1,16 @@
 from step4_ucb1 import *
 
 class ucb_context(step4_ucb1):
+
     def __init__(self, env: Environment,n_products, n_arms, prices, CR_info, alpha_info, n_prod_info, group_list, t):
         self.n_products = n_products
         self.n_arms = n_arms
         self.prices = prices
         self.env = env
         self.greedy_opt = Greedy_optimizer(env)
-
-        self.means = np.zeros((n_products, n_arms))
+            # widhts
         self.widths = np.ones((n_products, n_arms)) * np.inf
-        self.alphas_means = np.array([1/5, 1/5, 1/5, 1/5, 1/5])
         self.alphas_widths = np.ones(self.n_products) * np.inf
-        self.n_products_sold_means = np.array([1, 1, 1, 1, 1])
         self.n_products_sold_widths = np.ones(self.n_products) * np.inf
         
         
@@ -31,7 +29,10 @@ class ucb_context(step4_ucb1):
         self.means = self.cr_info[0, :, :]/self.cr_info[1, :, :]
         self.alphas_means = self.alpha_info/np.sum(self.alpha_info)
         self.n_products_sold_means = self.n_prod_info[0]/self.n_prod_info[1]
-            # widths
+            # widhts
+        self.widths = np.ones((n_products, n_arms)) * np.inf
+        self.alphas_widths = np.ones(self.n_products) * np.inf
+        self.n_products_sold_widths = np.ones(self.n_products) * np.inf
         for prod_ind in range(5):
             for price_ind in range(4):
                 # conversion rates

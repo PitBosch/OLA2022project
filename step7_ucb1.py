@@ -188,7 +188,7 @@ class step7_ucb1():
         # Initialize with initial context (default: all users aggregated)
         self.context = np.array([[0,0],[0,0]])
         self.simul_history = copy.deepcopy(self.initial_simul_history)
-        self.update_learner_list(0)
+        self.update_learner_list(1)
         # A complete run of n_days, with context generation algorithm run every 2 weeks (14 days)
         for t in range(n_days):
             if t%14 == 0 and t!= 0:
