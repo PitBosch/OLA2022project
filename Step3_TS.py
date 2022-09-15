@@ -49,7 +49,7 @@ class Step3_TS(Learner):
         # 1) Sample from Beta distributions the estimated conversion rate
         sampled_CR = self.sample_CR()
         # 2) Run the Greedy optimizer and select the best combination  
-        opt_prices_combination = self.Greedy_opt.run(conversion_rates=[sampled_CR]*3)["combination"]
+        opt_prices_combination = self.Greedy_opt.run(conversion_rates=[sampled_CR])["combination"]
         # 3) Fixed the prices for the day simulate the daily user iterations
         estimated_CR = self.env.simulate_day(daily_users, opt_prices_combination, ["conversion_rates"])['CR_data']
         # 4) Update Beta_parameters according to the simulation done
