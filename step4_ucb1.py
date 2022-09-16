@@ -99,6 +99,8 @@ class step4_ucb1(step3_ucb1):
         self.n_products_sold_means_history = []
 
     def print_estimations(self):
-        print("Estimated alpha ratios (means + widths, over n experiments):\n", np.mean(self.alphas_estimations_over_n_experiments, axis=0), "\n")
+        temp = np.mean(self.alphas_estimations_over_n_experiments, axis=0)
+        alpha_mean_over_exp = np.divide(temp, np.sum(temp))
+        print("Estimated alpha ratios (means + widths, over n experiments):\n", alpha_mean_over_exp, "\n")
         print("Estimated number of products sold (means + widths, over n experiments):\n", np.mean(self.n_products_sold_over_n_experiments, axis=0), "\n\n")
         super().print_estimations()
